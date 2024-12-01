@@ -1,0 +1,500 @@
+package atmfree;
+import java.util.Scanner;
+import java.util.HashMap;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Map;
+import java.util.Random;
+import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
+
+
+
+public class AtmFee {
+    private static Connection conn;
+    private Scanner inputScanner = new Scanner(System.in);
+    private double balance = 0;
+
+    private Map<String, User> users;
+    private String accountNumber;
+    private Map<String, List<Transaction>> transactions = new HashMap<>();
+     HashMap<String, String> rate = new HashMap<>();
+     String filePath = "rates.txt";
+
+
+    public static void initializeDatabase() {
+        try {
+            conn = DriverManager.getConnection("jdbc:sqlite:atm_users.db");
+            String createTableSQL = """
+                CREATE TABLE IF NOT EXISTS users (
+                    accountNumber TEXT PRIMARY KEY,
+                    password TEXT NOT NULL,
+                    balance REAL NOT NULL,
+                    name TEXT NOT NULL
+                )
+            """;
+            Statement stmt = conn.createStatement();
+            stmt.execute(createTableSQL);
+            
+        } catch (SQLException e) {
+            System.out.println("Error initializing database.");
+            e.printStackTrace();
+        }
+    }
+
+    public static void closeDatabase() {
+        try {
+            if (conn != null) {
+                conn.close();
+                System.out.println("Database connection closed.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error closing the database.");
+            e.printStackTrace();
+        }
+    }
+
+    public AtmFee() {
+        users = new HashMap<>();
+        loadUsersFromDatabase();
+        loadTransactionsFromDatabase();
+    }
+
+    private static class User {
+        String pinNumber;
+        double balance;
+        String name;
+
+        User(String pinNumber, double balance, String name) {
+            this.pinNumber = pinNumber;
+            this.balance = balance;
+            this.name = name;
+        }
+    }
+
+    private static class Transaction {
+        String type;
+        double amount;
+        String date;
+
+        Transaction(String type, double amount, String date) {
+            this.type = type;
+            this.amount = amount;
+            this.date = date;
+        }
+    }
+
+    public void loadUsersFromDatabase() {
+        try {
+            String query = "SELECT * FROM users";
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+
+            while (rs.next()) {
+                String accountNumber = rs.getString("accountNumber");
+                String pinNumber = rs.getString("password");
+                double balance = rs.getDouble("balance");
+                String name = rs.getString("name");
+                users.put(accountNumber, new User(pinNumber, balance, name));
+            }
+            
+        } catch (SQLException e) {
+            System.out.println("Error loading users from database.");
+            e.printStackTrace();
+        }
+    }
+
+    public void saveToDatabase() {
+        String sql = """
+            INSERT OR REPLACE INTO users (accountNumber, password, balance, name)
+            VALUES (?, ?, ?, ?)
+        """;
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (Map.Entry<String, User> entry : users.entrySet()) {
+                String accountNumber = entry.getKey();
+                User user = entry.getValue();
+                stmt.setString(1, accountNumber);
+                stmt.setString(2, user.pinNumber);
+                stmt.setDouble(3, user.balance);
+                stmt.setString(4, user.name);
+                stmt.executeUpdate();
+            }
+            
+        } catch (SQLException e) {
+            System.out.println("Error saving users to database.");
+            e.printStackTrace();
+        }
+    }
+
+    private void createAccount() {
+        Random random = new Random();
+        String accountNumber = String.valueOf(10000000 + random.nextInt(90000000));
+        System.out.println("Your new account number is: " + accountNumber);
+
+        System.out.print("Enter a 4-digit PIN: ");
+        String pinNumber = inputScanner.nextLine();
+
+        System.out.print("Enter your name (e.g., John_Doe): ");
+        String name = inputScanner.nextLine();
+
+        try {
+            String insertSQL = """
+                INSERT INTO users (accountNumber, password, balance, name)
+                VALUES (?, ?, ?, ?)
+            """;
+            PreparedStatement stmt = conn.prepareStatement(insertSQL);
+            stmt.setString(1, accountNumber);
+            stmt.setString(2, pinNumber);
+            stmt.setDouble(3, 0.0);
+            stmt.setString(4, name);
+            stmt.executeUpdate();
+
+            users.put(accountNumber, new User(pinNumber, 0.0, name));
+            System.out.println("Account created successfully.");
+        } catch (SQLException e) {
+            System.out.println("Error creating new account.");
+            e.printStackTrace();
+        }
+    }
+
+    public boolean authenticate(String accountNumber, String pinNumber) {
+        return users.containsKey(accountNumber) && users.get(accountNumber).pinNumber.equals(pinNumber);
+    }
+
+    private void mainMenu() {
+        while (true) {
+            System.out.println("\nWelcome to the ATM!:");
+            System.out.println("1. Log in");
+            System.out.println("2. Create Account");
+            System.out.println("3. Exit");
+            System.out.print("Choose an option: ");
+
+            int choice = inputScanner.nextInt();
+            inputScanner.nextLine(); // Clear buffer
+
+            switch (choice) {
+                case 1 -> logIn();
+                case 2 -> createAccount();
+                case 3 -> {
+                    System.out.println("Thank you for using the ATM. Goodbye!");
+                    System.exit(0);
+                }
+                default -> System.out.println("Invalid option. Try again.");
+            }
+        }
+    }
+
+    private void logIn() {
+        System.out.print("Enter your account number: ");
+        String accountNum = inputScanner.nextLine();
+
+        System.out.print("Enter your 4-digit PIN: ");
+        String pinNum = inputScanner.nextLine();
+
+        if (authenticate(accountNum, pinNum)) {
+            accountNumber = accountNum;
+            balance = users.get(accountNum).balance;
+            
+        } else {
+            System.out.println("Invalid account number or PIN. Please try again.");
+        }
+        useraction();
+
+    }
+
+    private void useraction() {
+        while (true) {
+            System.out.println("1. Account");
+            System.out.println("2. Tools");
+            System.out.println("3. Settings");
+            System.out.println("4. Exit");
+            System.out.print("Choose an option: ");
+            int choiceacion = inputScanner.nextInt();
+            inputScanner.nextLine(); // Clear buffer
+            
+            switch (choiceacion) {
+                case 1 -> userMenu();
+                case 2 -> tools();
+                case 3 -> System.out.println("Settings");
+                case 4 -> { return; }
+                default -> System.out.println("Invalid option. Try again.");
+            }
+        }
+    }
+
+    private void userMenu() {
+        String name = users.get(accountNumber).name;
+        System.out.println("\nWelcome back " + name );
+        while (true) {
+
+            System.out.println("User Menu:");
+            System.out.println("1. View Balance");
+            System.out.println("2. Deposit");
+            System.out.println("3. Withdraw");
+            System.out.println("4. Transactions");
+            System.out.println("5. Exit");
+            System.out.print("Choose an option: ");
+
+            int choice = inputScanner.nextInt();
+            inputScanner.nextLine(); // Clear buffer
+
+            switch (choice) {
+                case 1 -> System.out.println("Your balance is: $" + balance);
+                case 2 -> deposit();
+                case 3 -> withdraw();
+                case 4 -> transactions();
+                case 5 -> {
+                    saveToDatabase();
+                    saveTransactionsToDatabase();
+                    System.out.println("Logging out...");
+                    return;
+                }
+                default -> System.out.println("Invalid option. Try again.");
+            }
+        }
+    }
+
+    private void deposit() {
+        System.out.print("Enter deposit amount: $");
+        double amount = inputScanner.nextDouble();
+        inputScanner.nextLine(); // Clear buffer
+
+        if (amount > 0) {
+            balance += amount;
+            users.get(accountNumber).balance = balance;
+            System.out.println("Deposit successful. Your new balance is $" + balance);
+            
+            // Get or create transaction list and add new transaction
+            List<Transaction> userTransactions = transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>());
+            userTransactions.add(new Transaction("Deposit", amount, new Date().toString()));
+            
+            // Keep only the last 10 transactions
+            if (userTransactions.size() > 10) {
+                userTransactions = userTransactions.subList(userTransactions.size() - 10, userTransactions.size());
+                transactions.put(accountNumber, userTransactions);
+            }
+        } else {
+            System.out.println("Invalid amount. Deposit failed.");
+        }
+    }
+
+    private void withdraw() {
+        System.out.print("Enter withdrawal amount: $");
+        double amount = inputScanner.nextDouble();
+        inputScanner.nextLine(); // Clear buffer
+
+        if (amount > 0 && amount <= balance) {
+            balance -= amount;
+            users.get(accountNumber).balance = balance;
+            System.out.println("Withdrawal successful. Your new balance is $" + balance);
+            
+            // Get or create transaction list and add new transaction
+            List<Transaction> userTransactions = transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>());
+            userTransactions.add(new Transaction("Withdrawal", amount, new Date().toString()));
+            
+            // Keep only the last 10 transactions
+            if (userTransactions.size() > 10) {
+                userTransactions = userTransactions.subList(userTransactions.size() - 10, userTransactions.size());
+                transactions.put(accountNumber, userTransactions);
+            }
+        } else if (amount > balance) {
+            System.out.println("Insufficient funds. Withdrawal failed.");
+        } else {
+            System.out.println("Invalid amount. Withdrawal failed.");
+        }
+    }
+
+    public static void initializeDatabaseTransactions() {
+        try {
+            String createTableSQL = """
+                CREATE TABLE IF NOT EXISTS transactions (
+                    accountNumber TEXT PRIMARY KEY,
+                    type TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    date TEXT NOT NULL
+                )
+            """;
+            Statement stmt = conn.createStatement();
+            stmt.execute(createTableSQL);
+            System.out.println("Transactions table initialized successfully.");
+        } catch (SQLException e) {
+            System.out.println("Error initializing transactions table.");
+            e.printStackTrace();
+        }
+    }
+
+    public void loadTransactionsFromDatabase() {
+        try {
+            String query = "SELECT * FROM transactions";
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+
+            while (rs.next()) {
+                String accountNumber = rs.getString("accountNumber");
+                String type = rs.getString("type");
+                double amount = rs.getDouble("amount");
+                String date = rs.getString("date");
+                transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>())
+                           .add(new Transaction(type, amount, date));
+            }
+            System.out.println("Transactions loaded from database.");
+        } catch (SQLException e) {
+            System.out.println("Error loading transactions from database.");
+            e.printStackTrace();
+        }
+    }
+
+    public void saveTransactionsToDatabase() {
+        String sql = """
+            INSERT OR REPLACE INTO transactions (accountNumber, type, amount, date)
+            VALUES (?, ?, ?, ?)
+        """;
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (Map.Entry<String, List<Transaction>> entry : transactions.entrySet()) {
+                String accountNumber = entry.getKey();
+                List<Transaction> userTransactions = entry.getValue();
+                for (Transaction t : userTransactions) {
+                    stmt.setString(1, accountNumber);
+                    stmt.setString(2, t.type);
+                    stmt.setDouble(3, t.amount);
+                    stmt.setString(4, t.date);
+                    stmt.executeUpdate();
+                }
+            }
+            System.out.println("Transactions saved to database.");
+        } catch (SQLException e) {
+            System.out.println("Error saving transactions to database.");
+            e.printStackTrace();
+        }
+    }
+
+    private void transactions() {
+        List<Transaction> userTransactions = transactions.get(accountNumber);
+        if (userTransactions != null && !userTransactions.isEmpty()) {
+            System.out.println("\nTransaction History:");
+            for (Transaction t : userTransactions) {
+                System.out.println("Type: " + t.type);
+                System.out.println("Amount: $" + t.amount);
+                System.out.println("Date: " + t.date);
+                System.out.println("------------------------");
+            }
+        } else {
+            System.out.println("No transactions found.");
+        }
+    }
+
+    private void taxEstimator() {
+        double[] incomeLimits = {51446, 55867, 90559, 102894, 106732, 111733, 150000, 173205, 220000, 246752};
+        double[] taxRates = {0.2005, 0.2415, 0.2965, 0.3148, 0.3389, 0.3791, 0.4341, 0.4497, 0.4829, 0.4985, 0.5353};
+    
+        System.out.print("What is your yearly income: $");
+        double income = inputScanner.nextDouble();
+        System.out.print("What did you put into RRSP or FHSA: $");
+        double taxFreeAmount = inputScanner.nextDouble();
+    
+        income -= taxFreeAmount; // Adjust income
+        double taxTotal = 0;
+        double previousLimit = 0;
+    
+        for (int i = 0; i < incomeLimits.length; i++) {
+            if (income > incomeLimits[i]) {
+                taxTotal += (incomeLimits[i] - previousLimit) * taxRates[i];
+                previousLimit = incomeLimits[i];
+            } else {
+                taxTotal += (income - previousLimit) * taxRates[i];
+                break;
+            }
+        }
+    
+        if (income > incomeLimits[incomeLimits.length - 1]) {
+            taxTotal += (income - incomeLimits[incomeLimits.length - 1]) * taxRates[taxRates.length - 1];
+        }
+    
+        System.out.println("You owe $" + Math.round(taxTotal) + " in taxes.");
+    }
+
+    private void tools() {
+        while (true) {
+            System.out.println("1. Tax Estimator");
+            System.out.println("2. Exchange Rate");
+            System.out.println("3. Exit");
+            System.out.print("Choose an option: ");
+            
+            int tools = inputScanner.nextInt();
+            inputScanner.nextLine(); // Clear buffer
+            
+            try {
+                switch (tools) {
+                    case 1 -> taxEstimator();
+                    case 2 -> exchange();
+                    case 3 -> { return; }
+                    default -> System.out.println("Invalid option. Try again.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a number.");
+                continue;
+            }
+        }
+    }
+   
+    private void exchange(){
+    // Ensure the file exists in your project directory
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            // Read each line from the file
+            while ((line = reader.readLine()) != null) {
+                // Split the line into key and value
+                String[] parts = line.split(":", 2); // Split only at the first '='
+                if (parts.length == 2) {
+                    String Currency = parts[0].trim();    // Trim whitespace from key
+                    String Rate = parts[1].trim(); // Trim whitespace from value
+                    
+                    rate.put(Currency, Rate);
+                } else {
+                    System.out.println("Skipping malformed line: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+        }
+        System.out.println("Welcome to currency exchange!");
+        System.out.println("Please insert your current currency(Ex. USD): ");
+        String current = inputScanner.nextLine();
+        
+        System.out.println("Please insert the currency you want to exchange to(Ex. CAD): ");
+        String exchange = inputScanner.nextLine();
+        
+        System.out.println("Enter Amount: $");
+        Double amount = inputScanner.nextDouble();
+        
+        current.toUpperCase();
+        exchange.toUpperCase();
+        
+        // Retrieve the values from the HashMap
+        String currentRateStr = rate.get(current); // Get the rate as a String
+        String exchangeRateStr = rate.get(exchange); // Get the exchange rate as a String
+
+        // Convert the String values to double
+        
+        double currentRate = Double.parseDouble(currentRateStr);
+        double exchangeRate = Double.parseDouble(exchangeRateStr);
+        double Total = amount/(currentRate/exchangeRate);
+        Total = Total*100;
+        Total = Math.round(Total);
+        Total = Total/100;
+
+        System.out.println("Your exchanged amount from " + current +" to " + exchange + " is: $" + Total);
+    }
+    
+    public static void main(String[] args) {
+        initializeDatabase();
+        initializeDatabaseTransactions();
+        AtmFee atm = new AtmFee();
+        atm.mainMenu();
+        closeDatabase();
+    }
+}
