@@ -218,7 +218,7 @@ public class AtmFee {
             switch (choiceacion) {
                 case 1 -> userMenu();
                 case 2 -> tools();
-                case 3 -> System.out.println("Settings");
+                case 3 -> settings();
                 case 4 -> { return; }
                 default -> System.out.println("Invalid option. Try again.");
             }
@@ -280,7 +280,7 @@ public class AtmFee {
             System.out.println("Invalid amount. Deposit failed.");
         }
     }
-
+    
     private void withdraw() {
         System.out.print("Enter withdrawal amount: $");
         double amount = inputScanner.nextDouble();
@@ -439,7 +439,42 @@ public class AtmFee {
             }
         }
     }
-   
+
+    private void settings(){
+           
+        while(true){
+            System.out.println("Welcome to settings");
+                    System.out.println("1. Change PinNumber");
+                    System.out.println("2. Change Name");
+                    System.out.println("3. Exit");
+                    Integer settings = inputScanner.nextInt();
+                    inputScanner.nextLine();
+                    switch(settings){
+                        
+                        case 1:
+                            System.out.println("Enter new pin number:");
+                            String Newpin = inputScanner.nextLine();
+                            users.get(accountNumber).pinNumber= Newpin;
+                            saveToDatabase();
+                            System.out.println("New pin saved to file!");
+                            break;
+                        case 2:
+                            System.out.println("Enter new name:");
+                            String NewName = inputScanner.nextLine();
+                            users.get(accountNumber).name = NewName;
+                            saveToDatabase();
+                            System.out.println("New name saved to file!");
+                            break;
+                        case 3:
+                            return;
+                            
+                        default:
+                            System.out.println(accountNumber);
+                            break;
+                    }
+    }
+    }
+
     private void exchange(){
     // Ensure the file exists in your project directory
 
