@@ -15,6 +15,7 @@ import java.util.List;
 
 public class AtmFee {
     private static Connection conn;
+    private static Connection connTransactions;
     private Scanner inputScanner = new Scanner(System.in);
     private double balance = 0;
 
@@ -28,6 +29,8 @@ public class AtmFee {
     public static void initializeDatabase() {
         try {
             conn = DriverManager.getConnection("jdbc:sqlite:atm_users.db");
+            System.out.println("Connected to users database: atm_users.db");
+            
             String createTableSQL = """
                 CREATE TABLE IF NOT EXISTS users (
                     accountNumber TEXT PRIMARY KEY,
@@ -38,21 +41,34 @@ public class AtmFee {
             """;
             Statement stmt = conn.createStatement();
             stmt.execute(createTableSQL);
+            System.out.println("Users table initialized successfully.");
             
         } catch (SQLException e) {
-            System.out.println("Error initializing database.");
+            System.out.println("Error initializing users database.");
             e.printStackTrace();
         }
     }
 
-    public static void closeDatabase() {
+    public static void initializeDatabaseTransactions() {
         try {
-            if (conn != null) {
-                conn.close();
-                System.out.println("Database connection closed.");
-            }
+            connTransactions = DriverManager.getConnection("jdbc:sqlite:atm_transaction.db");
+            System.out.println("Connected to transactions database: atm_transaction.db");
+            
+            String createTableSQL = """
+                CREATE TABLE IF NOT EXISTS transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    accountNumber TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    date TEXT NOT NULL
+                )
+            """;
+            Statement stmt = connTransactions.createStatement();
+            stmt.execute(createTableSQL);
+            System.out.println("Transactions table initialized successfully.");
+            
         } catch (SQLException e) {
-            System.out.println("Error closing the database.");
+            System.out.println("Error initializing transactions database.");
             e.printStackTrace();
         }
     }
@@ -235,7 +251,8 @@ public class AtmFee {
             System.out.println("2. Deposit");
             System.out.println("3. Withdraw");
             System.out.println("4. Transactions");
-            System.out.println("5. Exit");
+            System.out.println("5. Transfer");
+            System.out.println("6. Exit");
             System.out.print("Choose an option: ");
 
             int choice = inputScanner.nextInt();
@@ -246,7 +263,8 @@ public class AtmFee {
                 case 2 -> deposit();
                 case 3 -> withdraw();
                 case 4 -> transactions();
-                case 5 -> {
+                case 5 -> transfer();
+                case 6-> {
                     saveToDatabase();
                     saveTransactionsToDatabase();
                     System.out.println("Logging out...");
@@ -307,29 +325,10 @@ public class AtmFee {
         }
     }
 
-    public static void initializeDatabaseTransactions() {
-        try {
-            String createTableSQL = """
-                CREATE TABLE IF NOT EXISTS transactions (
-                    accountNumber TEXT PRIMARY KEY,
-                    type TEXT NOT NULL,
-                    amount REAL NOT NULL,
-                    date TEXT NOT NULL
-                )
-            """;
-            Statement stmt = conn.createStatement();
-            stmt.execute(createTableSQL);
-            System.out.println("Transactions table initialized successfully.");
-        } catch (SQLException e) {
-            System.out.println("Error initializing transactions table.");
-            e.printStackTrace();
-        }
-    }
-
     public void loadTransactionsFromDatabase() {
         try {
             String query = "SELECT * FROM transactions";
-            Statement stmt = conn.createStatement();
+            Statement stmt = connTransactions.createStatement();
             ResultSet rs = stmt.executeQuery(query);
 
             while (rs.next()) {
@@ -349,10 +348,10 @@ public class AtmFee {
 
     public void saveTransactionsToDatabase() {
         String sql = """
-            INSERT OR REPLACE INTO transactions (accountNumber, type, amount, date)
+            INSERT OR IGNORE INTO transactions (accountNumber, type, amount, date)
             VALUES (?, ?, ?, ?)
         """;
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connTransactions.prepareStatement(sql)) {
             for (Map.Entry<String, List<Transaction>> entry : transactions.entrySet()) {
                 String accountNumber = entry.getKey();
                 List<Transaction> userTransactions = entry.getValue();
@@ -524,12 +523,94 @@ public class AtmFee {
 
         System.out.println("Your exchanged amount from " + current +" to " + exchange + " is: $" + Total);
     }
+
+    private void transfer(){
+       
+        
+        System.out.print("Enter the recipient's account number: ");
+        String recipientAccount = inputScanner.nextLine();
+    
+        // Check if recipient exists
+        if (!users.containsKey(recipientAccount)) {
+            System.out.println("The recipient's account number does not exist.");
+            return;
+        }
+    
+        System.out.print("Enter the amount to transfer: $");
+        if (inputScanner.hasNextDouble()) {
+            double transferAmount = inputScanner.nextDouble();
+            inputScanner.nextLine(); // Clear the buffer
+    
+            if (transferAmount <= 0) {
+                System.out.println("Invalid amount. Transfer amount must be greater than $0.");
+                return;
+            }
+    
+            if (transferAmount > balance) {
+                System.out.println("Insufficient funds. Transfer cannot be completed.");
+                return;
+            }
+    
+            // Deducting from sender's balance
+            balance -= transferAmount;
+            users.get(accountNumber).balance = balance;
+    
+            // Add to recipient's balance
+            User recipientUser = users.get(recipientAccount);
+            recipientUser.balance += transferAmount;
+    
+            // Save updated balances
+            saveToDatabase();
+    
+            // Record transactions for both accounts
+            transaction("Transfer to " + recipientAccount, transferAmount);
+            transaction("Transfer from " + accountNumber, transferAmount); // Record for recipient's transaction
+            saveTransactionsToDatabase();
+            System.out.println("Successfully transferred $" + transferAmount + " to account " + recipientAccount);
+        } else {
+            System.out.println("invalid");
+            inputScanner.nextLine(); // Clear invalid input
+        }   
+        }
+        
+    
+        // Add this method to handle transactions
+        private void transaction(String type, double amount) {
+            List<Transaction> userTransactions = transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>());
+            userTransactions.add(new Transaction(type, amount, new Date().toString()));
+            System.out.println("Transaction added: " + type + " of amount $" + amount);
+            
+            // Keep only the last 10 transactions
+            if (userTransactions.size() > 10) {
+                userTransactions = userTransactions.subList(userTransactions.size() - 10, userTransactions.size());
+                transactions.put(accountNumber, userTransactions);
+            }
+        }
+
     
     public static void main(String[] args) {
         initializeDatabase();
         initializeDatabaseTransactions();
         AtmFee atm = new AtmFee();
+        atm.loadUsersFromDatabase();
+        atm.loadTransactionsFromDatabase();
         atm.mainMenu();
         closeDatabase();
+    }
+
+    public static void closeDatabase() {
+        try {
+            if (conn != null) {
+                conn.close();
+                System.out.println("Users database connection closed.");
+            }
+            if (connTransactions != null) {
+                connTransactions.close();
+                System.out.println("Transactions database connection closed.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error closing the database.");
+            e.printStackTrace();
+        }
     }
 }
