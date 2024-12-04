@@ -36,7 +36,8 @@ public class AtmFee {
                     accountNumber TEXT PRIMARY KEY,
                     password TEXT NOT NULL,
                     balance REAL NOT NULL,
-                    name TEXT NOT NULL
+                    name TEXT NOT NULL,
+                    currency TEXT NOT NULL
                 )
             """;
             Statement stmt = conn.createStatement();
@@ -83,11 +84,12 @@ public class AtmFee {
         String pinNumber;
         double balance;
         String name;
-
-        User(String pinNumber, double balance, String name) {
+        String currency;
+        User(String pinNumber, double balance, String name, String currency) {
             this.pinNumber = pinNumber;
             this.balance = balance;
             this.name = name;
+            this.currency = currency;
         }
     }
 
@@ -114,7 +116,8 @@ public class AtmFee {
                 String pinNumber = rs.getString("password");
                 double balance = rs.getDouble("balance");
                 String name = rs.getString("name");
-                users.put(accountNumber, new User(pinNumber, balance, name));
+                String currency = rs.getString("currency");
+                users.put(accountNumber, new User(pinNumber, balance, name, currency));
             }
             
         } catch (SQLException e) {
@@ -125,8 +128,8 @@ public class AtmFee {
 
     public void saveToDatabase() {
         String sql = """
-            INSERT OR REPLACE INTO users (accountNumber, password, balance, name)
-            VALUES (?, ?, ?, ?)
+            INSERT OR REPLACE INTO users (accountNumber, password, balance, name, currency)
+            VALUES (?, ?, ?, ?, ?)
         """;
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             for (Map.Entry<String, User> entry : users.entrySet()) {
@@ -136,6 +139,7 @@ public class AtmFee {
                 stmt.setString(2, user.pinNumber);
                 stmt.setDouble(3, user.balance);
                 stmt.setString(4, user.name);
+                stmt.setString(5, user.currency);
                 stmt.executeUpdate();
             }
             
@@ -158,17 +162,18 @@ public class AtmFee {
 
         try {
             String insertSQL = """
-                INSERT INTO users (accountNumber, password, balance, name)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO users (accountNumber, password, balance, name, currency)
+                VALUES (?, ?, ?, ?, ?)
             """;
             PreparedStatement stmt = conn.prepareStatement(insertSQL);
             stmt.setString(1, accountNumber);
             stmt.setString(2, pinNumber);
             stmt.setDouble(3, 0.0);
             stmt.setString(4, name);
+            stmt.setString(5, "EUR");
             stmt.executeUpdate();
 
-            users.put(accountNumber, new User(pinNumber, 0.0, name));
+            users.put(accountNumber, new User(pinNumber, 0.0, name, "EUR"));
             System.out.println("Account created successfully.");
         } catch (SQLException e) {
             System.out.println("Error creating new account.");
@@ -243,6 +248,7 @@ public class AtmFee {
 
     private void userMenu() {
         String name = users.get(accountNumber).name;
+        String currency = users.get(accountNumber).currency;
         System.out.println("\nWelcome back " + name );
         while (true) {
 
@@ -250,8 +256,8 @@ public class AtmFee {
             System.out.println("1. View Balance");
             System.out.println("2. Deposit");
             System.out.println("3. Withdraw");
-            System.out.println("4. Transactions");
-            System.out.println("5. Transfer");
+            System.out.println("4. Transfer");
+            System.out.println("5. Transactions");
             System.out.println("6. Exit");
             System.out.print("Choose an option: ");
 
@@ -259,11 +265,19 @@ public class AtmFee {
             inputScanner.nextLine(); // Clear buffer
 
             switch (choice) {
-                case 1 -> System.out.println("Your balance is: $" + balance);
+                case 1 ->{
+                    loadExchangeRates();
+                    User currentUser = users.get(accountNumber);
+                    String currentCurrency = currentUser.currency;
+                    double currentRate = Double.parseDouble(rate.get(currentCurrency));
+                    double convertedBalance = balance *currentRate;
+                    convertedBalance = Math.round(convertedBalance * 100)/100;
+                    System.out.println("Your balance is: $" + convertedBalance +" in 3" + currentCurrency);
+            }
                 case 2 -> deposit();
                 case 3 -> withdraw();
-                case 4 -> transactions();
-                case 5 -> transfer();
+                case 4 -> transfer();
+                case 5 -> transactions();
                 case 6-> {
                     saveToDatabase();
                     saveTransactionsToDatabase();
@@ -279,11 +293,16 @@ public class AtmFee {
         System.out.print("Enter deposit amount: $");
         double amount = inputScanner.nextDouble();
         inputScanner.nextLine(); // Clear buffer
-
+        loadExchangeRates();
+        User currentUser = users.get(accountNumber);
+        String currentCurrency = currentUser.currency;
+        double currentRate = Double.parseDouble(rate.get(currentCurrency));
         if (amount > 0) {
             balance += amount;
             users.get(accountNumber).balance = balance;
-            System.out.println("Deposit successful. Your new balance is $" + balance);
+            double convertedBalance = balance * currentRate;
+            convertedBalance = Math.round(convertedBalance * 100.0) / 100.0;
+            System.out.println("Deposit successful. Your new balance is $" + convertedBalance + " in " + currentCurrency);
             
             // Get or create transaction list and add new transaction
             List<Transaction> userTransactions = transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>());
@@ -303,11 +322,16 @@ public class AtmFee {
         System.out.print("Enter withdrawal amount: $");
         double amount = inputScanner.nextDouble();
         inputScanner.nextLine(); // Clear buffer
-
+        loadExchangeRates();
+        User currentUser = users.get(accountNumber);
+        String currentCurrency = currentUser.currency;
+        double currentRate = Double.parseDouble(rate.get(currentCurrency));
         if (amount > 0 && amount <= balance) {
-            balance -= amount;
+            balance = (balance - amount)/currentRate;
             users.get(accountNumber).balance = balance;
-            System.out.println("Withdrawal successful. Your new balance is $" + balance);
+            double convertedBalance = balance * currentRate;
+            convertedBalance = Math.round(convertedBalance*100)/100;
+            System.out.println("Withdrawal successful. Your new balance is $" + convertedBalance+ " in " + currentCurrency);
             
             // Get or create transaction list and add new transaction
             List<Transaction> userTransactions = transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>());
@@ -445,7 +469,8 @@ public class AtmFee {
             System.out.println("Welcome to settings");
                     System.out.println("1. Change PinNumber");
                     System.out.println("2. Change Name");
-                    System.out.println("3. Exit");
+                    System.out.println("3. Currency");
+                    System.out.println("4. Exit");
                     Integer settings = inputScanner.nextInt();
                     inputScanner.nextLine();
                     switch(settings){
@@ -465,6 +490,13 @@ public class AtmFee {
                             System.out.println("New name saved to file!");
                             break;
                         case 3:
+                            System.out.println("Enter new Currency");
+                            String newCurrency = inputScanner.nextLine().toUpperCase();
+                            users.get(accountNumber).currency = newCurrency;
+                            saveToDatabase();
+                            System.out.println("New currency save to file!");
+                            break;
+                        case 4:
                             return;
                             
                         default:
@@ -473,11 +505,8 @@ public class AtmFee {
                     }
     }
     }
-
-    private void exchange(){
-    // Ensure the file exists in your project directory
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+    private void loadExchangeRates(){
+         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             // Read each line from the file
             while ((line = reader.readLine()) != null) {
@@ -495,6 +524,11 @@ public class AtmFee {
         } catch (IOException e) {
             System.err.println("Error reading file: " + e.getMessage());
         }
+    }
+    private void exchange(){
+    // Ensure the file exists in your project directory
+
+        loadExchangeRates();
         System.out.println("Welcome to currency exchange!");
         System.out.println("Please insert your current currency(Ex. USD): ");
         String current = inputScanner.nextLine();
@@ -525,7 +559,10 @@ public class AtmFee {
     }
 
     private void transfer(){
-       
+       loadExchangeRates();
+       User currentUser = users.get(accountNumber);
+       String currentCurrency = currentUser.currency;
+       double currentRate = Double.parseDouble(rate.get(currentCurrency));
         
         System.out.print("Enter the recipient's account number: ");
         String recipientAccount = inputScanner.nextLine();
@@ -540,6 +577,8 @@ public class AtmFee {
         if (inputScanner.hasNextDouble()) {
             double transferAmount = inputScanner.nextDouble();
             inputScanner.nextLine(); // Clear the buffer
+            transferAmount = transferAmount/currentRate;
+            transferAmount = Math.round(transferAmount *100)/100;
     
             if (transferAmount <= 0) {
                 System.out.println("Invalid amount. Transfer amount must be greater than $0.");
@@ -563,10 +602,10 @@ public class AtmFee {
             saveToDatabase();
     
             // Record transactions for both accounts
-            transaction("Transfer to " + recipientAccount, transferAmount);
-            transaction("Transfer from " + accountNumber, transferAmount); // Record for recipient's transaction
+            transaction("Transfer to " + recipientAccount, (transferAmount * currentRate));
+            transaction("Transfer from " + accountNumber, (transferAmount * currentRate)); // Record for recipient's transaction
             saveTransactionsToDatabase();
-            System.out.println("Successfully transferred $" + transferAmount + " to account " + recipientAccount);
+            System.out.println("Successfully transferred $" + (transferAmount *currentRate)+ " to account " + recipientAccount);
         } else {
             System.out.println("invalid");
             inputScanner.nextLine(); // Clear invalid input
@@ -614,3 +653,4 @@ public class AtmFee {
         }
     }
 }
+
