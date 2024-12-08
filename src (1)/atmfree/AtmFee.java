@@ -10,11 +10,13 @@ import java.util.Random;
 import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.HashSet;
+import java.util.Set;
+//imports
 
 
 public class AtmFee {
-    private static Connection conn;
+    private static Connection conn;//establish connection values i need two for each database
     private static Connection connTransactions;
     private Scanner inputScanner = new Scanner(System.in);
     private double balance = 0;
@@ -80,7 +82,7 @@ public class AtmFee {
         loadTransactionsFromDatabase();
     }
 
-    private static class User {
+    private static class User { // cretes class
         String pinNumber;
         double balance;
         String name;
@@ -93,7 +95,7 @@ public class AtmFee {
         }
     }
 
-    private static class Transaction {
+    private static class Transaction { // cretes class
         String type;
         double amount;
         String date;
@@ -151,13 +153,13 @@ public class AtmFee {
 
     private void createAccount() {
         Random random = new Random();
-        String accountNumber = String.valueOf(10000000 + random.nextInt(90000000));
+        String accountNumber = String.valueOf(10000000 + random.nextInt(90000000));// genertates a random 8 digit code
         System.out.println("Your new account number is: " + accountNumber);
 
         System.out.print("Enter a 4-digit PIN: ");
-        String pinNumber = inputScanner.nextLine();
+        String pinNumber = inputScanner.nextLine();// gets pin
 
-        System.out.print("Enter your name (e.g., John_Doe): ");
+        System.out.print("Enter your name (e.g., John_Doe): ");// gets name
         String name = inputScanner.nextLine();
 
         try {
@@ -170,7 +172,7 @@ public class AtmFee {
             stmt.setString(2, pinNumber);
             stmt.setDouble(3, 0.0);
             stmt.setString(4, name);
-            stmt.setString(5, "EUR");
+            stmt.setString(5, "EUR");//makes base currency EUR cause its one in the txt file
             stmt.executeUpdate();
 
             users.put(accountNumber, new User(pinNumber, 0.0, name, "EUR"));
@@ -248,7 +250,7 @@ public class AtmFee {
 
     private void userMenu() {
         String name = users.get(accountNumber).name;
-        String currency = users.get(accountNumber).currency;
+
         System.out.println("\nWelcome back " + name );
         while (true) {
 
@@ -266,21 +268,33 @@ public class AtmFee {
 
             switch (choice) {
                 case 1 ->{
-                    loadExchangeRates();
+                    loadExchangeRates();//grabs exchange rates
                     User currentUser = users.get(accountNumber);
-                    String currentCurrency = currentUser.currency;
+                    String currentCurrency = currentUser.currency;//convert the balence to the selected currency in settings
                     double currentRate = Double.parseDouble(rate.get(currentCurrency));
                     double convertedBalance = balance *currentRate;
                     convertedBalance = Math.round(convertedBalance * 100)/100;
                     System.out.println("Your balance is: $" + convertedBalance +" in 3" + currentCurrency);
             }
-                case 2 -> deposit();
-                case 3 -> withdraw();
-                case 4 -> transfer();
-                case 5 -> transactions();
+                case 2 -> {
+                    clearTransactions();
+                    deposit();
+                    saveTransactionsToDatabase();}
+                case 3 -> {
+                    clearTransactions();
+                    withdraw();
+                    saveTransactionsToDatabase();}
+                case 4 -> {
+                    clearTransactions();
+                    transfer();
+                    saveTransactionsToDatabase();}
+                case 5 ->{
+                    loadTransactionsFromDatabase(); 
+                    transactions();
+                    clearTransactions();}
                 case 6-> {
                     saveToDatabase();
-                    saveTransactionsToDatabase();
+                   
                     System.out.println("Logging out...");
                     return;
                 }
@@ -375,30 +389,44 @@ public class AtmFee {
             INSERT OR IGNORE INTO transactions (accountNumber, type, amount, date)
             VALUES (?, ?, ?, ?)
         """;
+
         try (PreparedStatement stmt = connTransactions.prepareStatement(sql)) {
+            Set<String> uniqueTransactions = new HashSet<>(); // Track unique transactions
             for (Map.Entry<String, List<Transaction>> entry : transactions.entrySet()) {
                 String accountNumber = entry.getKey();
                 List<Transaction> userTransactions = entry.getValue();
                 for (Transaction t : userTransactions) {
-                    stmt.setString(1, accountNumber);
-                    stmt.setString(2, t.type);
-                    stmt.setDouble(3, t.amount);
-                    stmt.setString(4, t.date);
-                    stmt.executeUpdate();
+                    String transactionKey = accountNumber + t.type + t.amount + t.date; // Create a unique key for each transaction
+                    if (!uniqueTransactions.contains(transactionKey)) { // Check if the transaction is unique
+                        stmt.setString(1, accountNumber);
+                        stmt.setString(2, t.type);
+                        stmt.setDouble(3, t.amount);
+                        stmt.setString(4, t.date);
+                        stmt.executeUpdate();
+                        uniqueTransactions.add(transactionKey); // Add to the set of unique transactions
+                    }
                 }
             }
             System.out.println("Transactions saved to database.");
+
+            // Clear the transactions map after successful save
+            transactions.clear(); // Clear the HashMap after saving
         } catch (SQLException e) {
             System.out.println("Error saving transactions to database.");
             e.printStackTrace();
         }
     }
 
-    private void transactions() {
+    private void transactions() { // prints out transactions for user 
         List<Transaction> userTransactions = transactions.get(accountNumber);
         if (userTransactions != null && !userTransactions.isEmpty()) {
             System.out.println("\nTransaction History:");
-            for (Transaction t : userTransactions) {
+
+            // Get the last 10 transactions
+            int startIndex = Math.max(userTransactions.size() - 10, 0);
+            List<Transaction> lastTransactions = userTransactions.subList(startIndex, userTransactions.size());
+
+            for (Transaction t : lastTransactions) {
                 System.out.println("Type: " + t.type);
                 System.out.println("Amount: $" + t.amount);
                 System.out.println("Date: " + t.date);
@@ -409,7 +437,7 @@ public class AtmFee {
         }
     }
 
-    private void taxEstimator() {
+    private void taxEstimator() {// tax esitmator tool
         double[] incomeLimits = {51446, 55867, 90559, 102894, 106732, 111733, 150000, 173205, 220000, 246752};
         double[] taxRates = {0.2005, 0.2415, 0.2965, 0.3148, 0.3389, 0.3791, 0.4341, 0.4497, 0.4829, 0.4985, 0.5353};
     
@@ -511,7 +539,7 @@ public class AtmFee {
             // Read each line from the file
             while ((line = reader.readLine()) != null) {
                 // Split the line into key and value
-                String[] parts = line.split(":", 2); // Split only at the first '='
+                String[] parts = line.split(":", 2); // Split the line into two values in between :
                 if (parts.length == 2) {
                     String Currency = parts[0].trim();    // Trim whitespace from key
                     String Rate = parts[1].trim(); // Trim whitespace from value
@@ -531,38 +559,35 @@ public class AtmFee {
         loadExchangeRates();
         System.out.println("Welcome to currency exchange!");
         System.out.println("Please insert your current currency(Ex. USD): ");
-        String current = inputScanner.nextLine();
+        String current = inputScanner.nextLine().toUpperCase(); //gets current currency
         
         System.out.println("Please insert the currency you want to exchange to(Ex. CAD): ");
-        String exchange = inputScanner.nextLine();
+        String exchange = inputScanner.nextLine().toUpperCase(); // gets exchnage currency
         
         System.out.println("Enter Amount: $");
         Double amount = inputScanner.nextDouble();
-        
-        current.toUpperCase();
-        exchange.toUpperCase();
+     
         
         // Retrieve the values from the HashMap
         String currentRateStr = rate.get(current); // Get the rate as a String
         String exchangeRateStr = rate.get(exchange); // Get the exchange rate as a String
 
         // Convert the String values to double
-        
         double currentRate = Double.parseDouble(currentRateStr);
         double exchangeRate = Double.parseDouble(exchangeRateStr);
         double Total = amount/(currentRate/exchangeRate);
         Total = Total*100;
-        Total = Math.round(Total);
+        Total = Math.round(Total); // convert value into an value like a price
         Total = Total/100;
 
-        System.out.println("Your exchanged amount from " + current +" to " + exchange + " is: $" + Total);
+        System.out.println("Your exchanged amount from " + current +" to " + exchange + " is: $" + Total); //prints out values
     }
 
     private void transfer(){
        loadExchangeRates();
-       User currentUser = users.get(accountNumber);
-       String currentCurrency = currentUser.currency;
-       double currentRate = Double.parseDouble(rate.get(currentCurrency));
+       User currentUser = users.get(accountNumber); // grbas currentuser account
+       String currentCurrency = currentUser.currency; // grabs current users currency setting
+       double currentRate = Double.parseDouble(rate.get(currentCurrency)); //grbas rate for the currenyc from rates.txt
         
         System.out.print("Enter the recipient's account number: ");
         String recipientAccount = inputScanner.nextLine();
@@ -595,7 +620,7 @@ public class AtmFee {
             users.get(accountNumber).balance = balance;
     
             // Add to recipient's balance
-            User recipientUser = users.get(recipientAccount);
+            User recipientUser = users.get(recipientAccount); // checks user in database
             recipientUser.balance += transferAmount;
     
             // Save updated balances
@@ -604,7 +629,7 @@ public class AtmFee {
             // Record transactions for both accounts
             transaction("Transfer to " + recipientAccount, (transferAmount * currentRate));
             transaction("Transfer from " + accountNumber, (transferAmount * currentRate)); // Record for recipient's transaction
-            saveTransactionsToDatabase();
+           
             System.out.println("Successfully transferred $" + (transferAmount *currentRate)+ " to account " + recipientAccount);
         } else {
             System.out.println("invalid");
@@ -616,28 +641,44 @@ public class AtmFee {
         // Add this method to handle transactions
         private void transaction(String type, double amount) {
             List<Transaction> userTransactions = transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>());
-            userTransactions.add(new Transaction(type, amount, new Date().toString()));
-            System.out.println("Transaction added: " + type + " of amount $" + amount);
-            
-            // Keep only the last 10 transactions
-            if (userTransactions.size() > 10) {
-                userTransactions = userTransactions.subList(userTransactions.size() - 10, userTransactions.size());
-                transactions.put(accountNumber, userTransactions);
+
+            // Create a unique key for the transaction
+            String transactionKey = accountNumber + type + amount + new Date().toString(); // Unique identifier
+
+            // Check if the transaction already exists
+            boolean exists = userTransactions.stream()
+                .anyMatch(t -> t.type.equals(type) && t.amount == amount && t.date.equals(new Date().toString()));
+
+            if (!exists) {
+                userTransactions.add(new Transaction(type, amount, new Date().toString()));
+                System.out.println("Transaction added: " + type + " of amount $" + amount);
+                
+                // Keep only the last 10 transactions
+                if (userTransactions.size() > 10) {
+                    userTransactions = userTransactions.subList(userTransactions.size() - 10, userTransactions.size());
+                    transactions.put(accountNumber, userTransactions);
+                }
+            } else {
+                System.out.println("Transaction already exists: " + type + " of amount $" + amount);
             }
         }
 
-    
-    public static void main(String[] args) {
-        initializeDatabase();
-        initializeDatabaseTransactions();
-        AtmFee atm = new AtmFee();
-        atm.loadUsersFromDatabase();
-        atm.loadTransactionsFromDatabase();
-        atm.mainMenu();
-        closeDatabase();
+    public void clearTransactions() {
+        transactions.clear(); // Clear the HashMap
+        System.out.println("All transactions have been cleared.");
     }
 
-    public static void closeDatabase() {
+    public static void main(String[] args) {
+        initializeDatabase();
+        initializeDatabaseTransactions(); // intalize bith databases
+        AtmFee atm = new AtmFee();
+        atm.loadUsersFromDatabase(); // load values from datbase into a hashmap
+        atm.loadTransactionsFromDatabase();
+        atm.mainMenu(); // opens main menu
+        closeDatabase(); //close datbase
+    }
+
+    public static void closeDatabase() { // closes database (copied from internet no ides how this works)
         try {
             if (conn != null) {
                 conn.close();
