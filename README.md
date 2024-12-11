@@ -2,6 +2,7 @@
 # ATM Fee Management System
 
 The **ATM Fee Management System** is a comprehensive banking system implemented in Java. It provides functionalities like account management, transactions, balance viewing, deposits, withdrawals, currency exchange, tax estimation, and more, using a database for persistent storage.
+Main file is in the src(1) folder under the name atmfee.java.
 
 ---
 
