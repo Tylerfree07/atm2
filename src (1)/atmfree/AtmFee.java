@@ -88,7 +88,7 @@ public class AtmFee {
     public AtmFee() {
         users = new HashMap<>();
         loadUsersFromDatabase();
-        loadTransactionsFromDatabase();
+        
     }
 
     private static class User { // cretes class
@@ -280,7 +280,7 @@ while (true) {
                             loadTransactionsFromDatabase();
                             exportTransactionsToCSV();
                             clearTransactions();}
-                case 4 ->  System.out.println("Transaction history cleared.");
+                case 4 ->  clearEstaments(accountNumber);
                 case 5 -> { return; }
                 default -> System.out.println("Invalid option. Try again.");
             }
@@ -711,7 +711,7 @@ while (true) {
         initializeDatabaseTransactions(); // intalize bith databases
         AtmFee atm = new AtmFee();
         atm.loadUsersFromDatabase(); // load values from datbase into a hashmap
-        atm.loadTransactionsFromDatabase();
+        
         atm.mainMenu(); // opens main menu
         closeDatabase(); //close datbase
         
@@ -796,8 +796,23 @@ private void exportTransactionsToPDF() {
         document.close();
     }
 }
-private void clearEstaments() {
-System.out.println("");
+private void clearEstaments(String accountNumber) {
+   
+    String deleteTransactionsQuery = "DELETE FROM transactions WHERE accountNumber = ?";
+
+    try (PreparedStatement deleteStmt = connTransactions.prepareStatement(deleteTransactionsQuery)) {
+        // Set the account number in the query
+        deleteStmt.setString(1, accountNumber);
+
+        // Execute the deletion
+        int rowsDeleted = deleteStmt.executeUpdate();
+        System.out.println(rowsDeleted + " transaction(s) deleted for account: " + accountNumber);
+    } catch (SQLException e) {
+        System.out.println("Error clearing transactions for account: " + accountNumber);
+        e.printStackTrace();
+    }
+    }
+    
 }
-}
+
 
