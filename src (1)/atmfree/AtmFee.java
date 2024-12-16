@@ -354,6 +354,7 @@ public class AtmFee {
             System.out.println("Invalid amount. Deposit failed.");
         }
     }
+     
     
     private void withdraw() {
         System.out.print("Enter withdrawal amount: $");
