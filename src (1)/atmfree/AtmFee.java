@@ -257,6 +257,39 @@ public class AtmFee {
         }
     }
 
+private void estamentmenu() {
+while (true) {
+    System.out.println("Estament Menu:");
+    System.out.println("1. View transactions");
+    System.out.println("2. Export to PDF file");
+    System.out.println("3. Export to CSV file");
+    System.out.println("4. Clear transaction history");
+    System.out.println("5. Exit");
+    int choice = inputScanner.nextInt();
+    inputScanner.nextLine(); // Clear buffer
+    
+    switch (choice) {
+                case 1 -> {loadTransactionsFromDatabase(); 
+                            transactions();
+                            clearTransactions();}
+                case 2 -> {clearTransactions();
+                            loadTransactionsFromDatabase();
+                            exportTransactionsToPDF();
+                            clearTransactions();}
+                case 3 -> {clearTransactions();
+                            loadTransactionsFromDatabase();
+                            exportTransactionsToCSV();
+                            clearTransactions();}
+                case 4 ->  System.out.println("Transaction history cleared.");
+                case 5 -> { return; }
+                default -> System.out.println("Invalid option. Try again.");
+            }
+        }
+    
+}
+
+
+
     private void userMenu() {
         String name = users.get(accountNumber).name;
 
@@ -268,10 +301,8 @@ public class AtmFee {
             System.out.println("2. Deposit");
             System.out.println("3. Withdraw");
             System.out.println("4. Transfer");
-            System.out.println("5. Transactions");
-            System.out.println("6. Export transactiosn to CSV file");
-            System.out.println("7. Export transactions to PDF file");
-            System.out.println("8. Exit");
+            System.out.println("5. Estament's");
+            System.out.println("6. Exit");
             System.out.print("Choose an option: ");
 
             int choice = inputScanner.nextInt();
@@ -299,23 +330,8 @@ public class AtmFee {
                     clearTransactions();
                     transfer();
                     saveTransactionsToDatabase();}
-                case 5 ->{
-                    loadTransactionsFromDatabase(); 
-                    transactions();
-                    clearTransactions();}
-                case 6 -> {
-                   clearTransactions();
-                    loadTransactionsFromDatabase();
-                    exportTransactionsToCSV();
-                    clearTransactions();
-                }
-                case 7 -> {
-                  clearTransactions();
-                    loadTransactionsFromDatabase();
-                    exportTransactionsToPDF();
-                   clearTransactions();
-                }
-                    case 8-> {
+                case 5 ->estamentmenu();
+                case 6-> {
                     saveToDatabase();
                    
                     System.out.println("Logging out...");
@@ -354,7 +370,6 @@ public class AtmFee {
             System.out.println("Invalid amount. Deposit failed.");
         }
     }
-     
     
     private void withdraw() {
         System.out.print("Enter withdrawal amount: $");
@@ -518,7 +533,7 @@ public class AtmFee {
     private void settings(){
            
         while(true){
-            System.out.println("Welcome to settings");
+                    System.out.println("Welcome to settings");
                     System.out.println("1. Change PinNumber");
                     System.out.println("2. Change Name");
                     System.out.println("3. Currency");
@@ -781,6 +796,8 @@ private void exportTransactionsToPDF() {
         document.close();
     }
 }
-
+private void clearEstaments() {
+System.out.println("");
+}
 }
 
