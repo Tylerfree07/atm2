@@ -510,7 +510,8 @@ while (true) {
         while (true) {
             System.out.println("1. Tax Estimator");
             System.out.println("2. Exchange Rate");
-            System.out.println("3. Exit");
+            System.out.println("3. Loan Calculator");
+            System.out.println("4. Exit");
             System.out.print("Choose an option: ");
             
             int tools = inputScanner.nextInt();
@@ -520,7 +521,8 @@ while (true) {
                 switch (tools) {
                     case 1 -> taxEstimator();
                     case 2 -> exchange();
-                    case 3 -> { return; }
+                    case 3 -> calcLoan();
+                    case 4 -> { return; }
                     default -> System.out.println("Invalid option. Try again.");
                 }
             } catch (NumberFormatException e) {
@@ -813,6 +815,25 @@ private void clearEstaments(String accountNumber) {
     }
     }
     
+    private void calcLoan(){
+       
+        System.out.print("Enter the loan amount: $");
+        double loanAmount = inputScanner.nextDouble();
+        inputScanner.nextLine(); // Clear the buffer
+        System.out.print("Enter the amount you pay the loan back in years: ");
+        int loanTerm = inputScanner.nextInt();
+        inputScanner.nextLine(); // Clear the buffer
+        System.out.print("Enter the annual interest rate (in decimal form)Ex. 0.07: ");
+        double annualInterestRate = inputScanner.nextDouble();
+        inputScanner.nextLine();
+        double total = loanAmount * (1 + (annualInterestRate * loanTerm));
+        System.out.println("You will owe $" + total + " after " + loanTerm + " years.");
+    }
+
+
+
+
+
 }
 
 
