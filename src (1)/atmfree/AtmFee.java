@@ -232,8 +232,8 @@ public class AtmFee {
     }
 
     private void logIn() {
-       
-       for ( int i = 0; i <3 ; i++ ) {
+       int Attempts = 3;
+       for ( int i = 0; i <Attempts ; i++ ) {
         System.out.print("Enter your account number: ");
         String accountNum = inputScanner.nextLine();
 
@@ -244,14 +244,21 @@ public class AtmFee {
             accountNumber = accountNum;
             balance = users.get(accountNum).balance;
             useraction();
+            return;
         } else {
             System.out.println("Invalid account number or PIN. Please try again.");
-            System.out.println("Attempts left: " + (2 - i));
+            System.out.println("Attempts left: " + (Attempts - 1 - i));
         }
         
 
     }
     System.out.println("you have run out of trys please try again later!!!!");
+    try {
+        System.out.println("Locking out for 30 seconds...");
+        Thread.sleep(30000); // Lockout delay (30 seconds)
+    } catch (InterruptedException e) {
+        System.out.println("Error during lockout delay.");
+    }
     System.exit(0);
     }
     private void useraction() {
@@ -268,7 +275,8 @@ public class AtmFee {
                 case 1 -> userMenu();
                 case 2 -> tools();
                 case 3 -> settings();
-                case 4 -> { return; }
+                case 4 -> {
+                    return; }
                 default -> System.out.println("Invalid option. Try again.");
             }
         }
