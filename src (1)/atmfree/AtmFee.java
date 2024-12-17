@@ -8,6 +8,9 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.*;
 import java.util.Map;
 import java.util.Random;
@@ -21,6 +24,14 @@ import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONObject;
+
+
+
 //imports
 
 
@@ -36,7 +47,8 @@ public class AtmFee {
      HashMap<String, String> rate = new HashMap<>();
      String filePath = "rates.txt";
 
-
+     private String API_KEY = "3d3ad73d8e9fda40a5af4915"; // Replace with your API Key
+     private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/";
     public static void initializeDatabase() {
         try {
             conn = DriverManager.getConnection("jdbc:sqlite:atm_users.db");
@@ -525,7 +537,7 @@ while (true) {
             try {
                 switch (tools) {
                     case 1 -> taxEstimator();
-                    case 2 -> exchange();
+                    case 2 -> exchangenew();
                     case 3 -> calcLoan();
                     case 4 -> { return; }
                     default -> System.out.println("Invalid option. Try again.");
@@ -834,6 +846,87 @@ private void clearEstaments(String accountNumber) {
         double total = loanAmount * (1 + (annualInterestRate * loanTerm));
         System.out.println("You will owe $" + total + " after " + loanTerm + " years.");
     }
+
+
+
+
+
+
+
+private void loadExchangeRates(String baseCurrency) {
+    try {
+        // Construct the API request URL
+        String requestURL = BASE_URL + baseCurrency;
+
+        // Open connection and send request
+        URL url = new URL(requestURL);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+
+        int responseCode = conn.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String line;
+
+            // Read response
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+
+            // Parse JSON response
+            JSONObject jsonResponse = new JSONObject(response.toString());
+            JSONObject ratesJSON = jsonResponse.getJSONObject("conversion_rates");
+
+            // Clear existing rates and update with real-time data
+            rate.clear();
+            for (String currency : ratesJSON.keySet()) {
+                rate.put(currency, String.valueOf(ratesJSON.getDouble(currency)));
+            }
+            System.out.println("Exchange rates updated successfully!");
+        } else {
+            System.out.println("Failed to fetch exchange rates. Response Code: " + responseCode);
+        }
+    } catch (Exception e) {
+        System.out.println("Error fetching exchange rates: " + e.getMessage());
+        e.printStackTrace();
+    }
+}
+
+private void exchangenew() {
+    // Fetch exchange rates in real-time using USD as base currency
+    loadExchangeRates("EUR");
+
+    System.out.println("Welcome to currency exchange!");
+    System.out.println("Please insert your current currency (Ex. USD): ");
+    String current = inputScanner.nextLine().toUpperCase(); // Current currency
+
+    System.out.println("Please insert the currency you want to exchange to (Ex. CAD): ");
+    String exchange = inputScanner.nextLine().toUpperCase(); // Target currency
+
+    System.out.println("Enter Amount: $");
+    Double amount = inputScanner.nextDouble();
+
+    // Check if currencies exist
+    if (!rate.containsKey(current) || !rate.containsKey(exchange)) {
+        System.out.println("Invalid currency code.");
+        return;
+    }
+
+    // Perform conversion
+    double currentRate = Double.parseDouble(rate.get(current));
+    double exchangeRate = Double.parseDouble(rate.get(exchange));
+    double convertedAmount = amount / currentRate * exchangeRate;
+    convertedAmount = Math.round(convertedAmount * 100.0) / 100.0;
+
+    System.out.println("Your exchanged amount from " + current + " to " + exchange + " is: $" + convertedAmount);
+}
+
+
+
+
+
 
 
 
