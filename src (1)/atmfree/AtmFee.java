@@ -229,11 +229,11 @@ public class AtmFee {
         if (authenticate(accountNum, pinNum)) {
             accountNumber = accountNum;
             balance = users.get(accountNum).balance;
-            
+            useraction();
         } else {
             System.out.println("Invalid account number or PIN. Please try again.");
         }
-        useraction();
+        
 
     }
 
