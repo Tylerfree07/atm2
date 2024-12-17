@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Random;
 import java.util.Date;
@@ -44,8 +45,8 @@ public class AtmFee {
      HashMap<String, String> rate = new HashMap<>();
      String filePath = "rates.txt";
 
-     private String API_KEY = "3d3ad73d8e9fda40a5af49115"; // Replace with your API Key
-     private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/";
+     private String API_KEY = "3d3ad73d8e9fda40a5af4915"; // Replace with your API Key
+     private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/USD";
     public static void initializeDatabase() {
         try {
             conn = DriverManager.getConnection("jdbc:sqlite:atm_users.db");
@@ -256,7 +257,7 @@ public class AtmFee {
     } catch (InterruptedException e) {
         System.out.println("Error during lockout delay.");
     }
-    System.exit(0);
+    return;
     }
     private void useraction() {
         while (true) {
@@ -338,7 +339,7 @@ while (true) {
                     double currentRate = Double.parseDouble(rate.get(currentCurrency));
                     double convertedBalance = balance *currentRate;
                     convertedBalance = Math.round(convertedBalance * 100)/100;
-                    System.out.println("Your balance is: $" + convertedBalance +" in 3" + currentCurrency);
+                    System.out.println("Your balance is: $" + convertedBalance +" in " + currentCurrency);
             }
                 case 2 -> {
                     clearTransactions();
@@ -373,7 +374,7 @@ while (true) {
         String currentCurrency = currentUser.currency;
         double currentRate = Double.parseDouble(rate.get(currentCurrency));
         if (amount > 0) {
-            balance += amount;
+            balance = balance + amount/currentRate;
             users.get(accountNumber).balance = balance;
             double convertedBalance = balance * currentRate;
             convertedBalance = Math.round(convertedBalance * 100.0) / 100.0;
@@ -402,7 +403,7 @@ while (true) {
         String currentCurrency = currentUser.currency;
         double currentRate = Double.parseDouble(rate.get(currentCurrency));
         if (amount > 0 && amount <= balance) {
-            balance = (balance - amount)/currentRate;
+            balance = balance - amount/currentRate;
             users.get(accountNumber).balance = balance;
             double convertedBalance = balance * currentRate;
             convertedBalance = Math.round(convertedBalance*100)/100;
@@ -542,7 +543,7 @@ while (true) {
             try {
                 switch (tools) {
                     case 1 -> taxEstimator();
-                    case 2 -> exchangenew();
+                    case 2 -> exchange();
                     case 3 -> calcLoan();
                     case 4 -> { return; }
                     default -> System.out.println("Invalid option. Try again.");
@@ -707,7 +708,7 @@ while (true) {
         initializeDatabaseTransactions(); // intalize bith databases
         AtmFee atm = new AtmFee();
         atm.loadUsersFromDatabase(); // load values from datbase into a hashmap
-        
+        atm.updateRatesFileOnceADay();
         atm.mainMenu(); // opens main menu
         closeDatabase(); //close datbase
         
@@ -826,88 +827,111 @@ private void clearEstaments(String accountNumber) {
 
 
 
-
-
-
-
-private void loadExchangeRates(String baseCurrency) {
+private void updateRatesFileOnceADay() {
     try {
-        // Construct the API request URL
-        String requestURL = BASE_URL + baseCurrency;
-
-        // Open connection and send request
-        URL url = new URL(requestURL);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-
-        int responseCode = conn.getResponseCode();
-        if (responseCode == HttpURLConnection.HTTP_OK) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            StringBuilder response = new StringBuilder();
-            String line;
-
-            // Read response
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
-            }
-            reader.close();
-
-            // Parse JSON response
-            JSONObject jsonResponse = new JSONObject(response.toString());
-            JSONObject ratesJSON = jsonResponse.getJSONObject("conversion_rates");
-
-            // Clear existing rates and update with real-time data
-            rate.clear();
-            for (String currency : ratesJSON.keySet()) {
-                rate.put(currency, String.valueOf(ratesJSON.getDouble(currency)));
-            }
-            System.out.println("Exchange rates updated successfully!");
-        } else {
-            System.out.println("Failed to fetch exchange rates. Response Code: " + responseCode);
+        // Check if today's date matches the last update date in the file
+        if (isFileUpToDate()) {
+            System.out.println("Rates file is already up to date for today.");
+            return; // Exit if rates are already updated today
         }
+
+        // Fetch new rates from API
+        Map<String, String> updatedRates = fetchExchangeRatesFromAPI();
+
+        // Write new rates and today's date to rates.txt
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            writer.write("LAST_UPDATE:" + LocalDate.now()); // Write today's date first
+            writer.newLine();
+
+            for (Map.Entry<String, String> entry : updatedRates.entrySet()) {
+                writer.write(entry.getKey() + ":" + entry.getValue()); // Currency and rate
+                writer.newLine();
+            }
+        }
+        System.out.println("Rates file successfully updated with new API data.");
     } catch (Exception e) {
-        System.out.println("Error fetching exchange rates: " + e.getMessage());
+        System.out.println("Failed to update rates file: " + e.getMessage());
         e.printStackTrace();
     }
 }
 
-private void exchangenew() {
-    // Fetch exchange rates in real-time using USD as base currency
-    try{
-    loadExchangeRates("USD");}
-    catch(Exception e){loadExchangeRates();}
-
-    System.out.println("Welcome to currency exchange!");
-    System.out.println("Please insert your current currency (Ex. USD): ");
-    String current = inputScanner.nextLine().toUpperCase(); // Current currency
-
-    System.out.println("Please insert the currency you want to exchange to (Ex. CAD): ");
-    String exchange = inputScanner.nextLine().toUpperCase(); // Target currency
-
-    System.out.println("Enter Amount: $");
-    Double amount = inputScanner.nextDouble();
-
-    // Check if currencies exist
-    if (!rate.containsKey(current) || !rate.containsKey(exchange)) {
-        System.out.println("Invalid currency code.");
-        return;
+// Function to check if rates.txt is up to date
+private boolean isFileUpToDate() {
+    try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+        String line = reader.readLine(); // Read the first line
+        if (line != null && line.startsWith("LAST_UPDATE:")) {
+            String lastUpdate = line.split(":")[1];
+            return lastUpdate.equals(LocalDate.now().toString()); // Compare dates
+        }
+    } catch (IOException e) {
+        System.out.println("Rates file not found or unreadable. It will be created.");
     }
-
-    // Perform conversion
-    double currentRate = Double.parseDouble(rate.get(current));
-    double exchangeRate = Double.parseDouble(rate.get(exchange));
-    double convertedAmount = amount / currentRate * exchangeRate;
-    convertedAmount = Math.round(convertedAmount * 100.0) / 100.0;
-
-    System.out.println("Your exchanged amount from " + current + " to " + exchange + " is: $" + convertedAmount);
+    return false; // Default to false if file doesn't exist or is invalid
 }
 
+// Function to fetch exchange rates from the API
+private Map<String, String> fetchExchangeRatesFromAPI() throws Exception {
+    Map<String, String> newRates = new HashMap<>();
 
+    // API call
+    URL url = new URL(BASE_URL);
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod("GET");
 
+    int responseCode = conn.getResponseCode();
+    if (responseCode == HttpURLConnection.HTTP_OK) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        StringBuilder response = new StringBuilder();
+        String line;
 
+        while ((line = reader.readLine()) != null) {
+            response.append(line);
+        }
+        reader.close();
 
+        // Parse JSON response
+        JSONObject jsonResponse = new JSONObject(response.toString());
+        JSONObject ratesJSON = jsonResponse.getJSONObject("conversion_rates");
 
+        // Store rates in the Map
+        for (String currency : ratesJSON.keySet()) {
+            newRates.put(currency, String.valueOf(ratesJSON.getDouble(currency)));
+        }
+    } else {
+        throw new Exception("API returned non-OK response: " + responseCode);
+    }
 
+    return newRates;
+}
+private void exchange(){
+    // Ensure the file exists in your project directory
+
+        loadExchangeRates();
+        System.out.println("Welcome to currency exchange!");
+        System.out.println("Please insert your current currency(Ex. USD): ");
+        String current = inputScanner.nextLine().toUpperCase(); //gets current currency
+        
+        System.out.println("Please insert the currency you want to exchange to(Ex. CAD): ");
+        String exchange = inputScanner.nextLine().toUpperCase(); // gets exchnage currency
+        
+        System.out.println("Enter Amount: $");
+        Double amount = inputScanner.nextDouble();
+     
+        
+        // Retrieve the values from the HashMap
+        String currentRateStr = rate.get(current); // Get the rate as a String
+        String exchangeRateStr = rate.get(exchange); // Get the exchange rate as a String
+
+        // Convert the String values to double
+        double currentRate = Double.parseDouble(currentRateStr);
+        double exchangeRate = Double.parseDouble(exchangeRateStr);
+        double Total = amount/(currentRate/exchangeRate);
+        Total = Total*100;
+        Total = Math.round(Total); // convert value into an value like a price
+        Total = Total/100;
+
+        System.out.println("Your exchanged amount from " + current +" to " + exchange + " is: $" + Total); //prints out values
+    }
 
 
 
