@@ -29,9 +29,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import org.json.JSONObject;
-
-
-
 //imports
 
 
@@ -47,7 +44,7 @@ public class AtmFee {
      HashMap<String, String> rate = new HashMap<>();
      String filePath = "rates.txt";
 
-     private String API_KEY = "3d3ad73d8e9fda40a5af4915"; // Replace with your API Key
+     private String API_KEY = "3d3ad73d8e9fda40a5af49115"; // Replace with your API Key
      private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/";
     public static void initializeDatabase() {
         try {
@@ -619,35 +616,7 @@ while (true) {
             System.err.println("Error reading file: " + e.getMessage());
         }
     }
-    private void exchange(){
-    // Ensure the file exists in your project directory
 
-        loadExchangeRates();
-        System.out.println("Welcome to currency exchange!");
-        System.out.println("Please insert your current currency(Ex. USD): ");
-        String current = inputScanner.nextLine().toUpperCase(); //gets current currency
-        
-        System.out.println("Please insert the currency you want to exchange to(Ex. CAD): ");
-        String exchange = inputScanner.nextLine().toUpperCase(); // gets exchnage currency
-        
-        System.out.println("Enter Amount: $");
-        Double amount = inputScanner.nextDouble();
-     
-        
-        // Retrieve the values from the HashMap
-        String currentRateStr = rate.get(current); // Get the rate as a String
-        String exchangeRateStr = rate.get(exchange); // Get the exchange rate as a String
-
-        // Convert the String values to double
-        double currentRate = Double.parseDouble(currentRateStr);
-        double exchangeRate = Double.parseDouble(exchangeRateStr);
-        double Total = amount/(currentRate/exchangeRate);
-        Total = Total*100;
-        Total = Math.round(Total); // convert value into an value like a price
-        Total = Total/100;
-
-        System.out.println("Your exchanged amount from " + current +" to " + exchange + " is: $" + Total); //prints out values
-    }
 
     private void transfer(){
        loadExchangeRates();
@@ -904,7 +873,9 @@ private void loadExchangeRates(String baseCurrency) {
 
 private void exchangenew() {
     // Fetch exchange rates in real-time using USD as base currency
-    loadExchangeRates("EUR");
+    try{
+    loadExchangeRates("USD");}
+    catch(Exception e){loadExchangeRates();}
 
     System.out.println("Welcome to currency exchange!");
     System.out.println("Please insert your current currency (Ex. USD): ");
