@@ -220,6 +220,8 @@ public class AtmFee {
     }
 
     private void logIn() {
+       
+       for ( int i = 0; i <3 ; i++ ) {
         System.out.print("Enter your account number: ");
         String accountNum = inputScanner.nextLine();
 
@@ -232,11 +234,14 @@ public class AtmFee {
             useraction();
         } else {
             System.out.println("Invalid account number or PIN. Please try again.");
+            System.out.println("Attempts left: " + (2 - i));
         }
         
 
     }
-
+    System.out.println("you have run out of trys please try again later!!!!");
+    System.exit(0);
+    }
     private void useraction() {
         while (true) {
             System.out.println("1. Account");
