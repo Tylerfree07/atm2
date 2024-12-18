@@ -25,10 +25,6 @@ import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import org.json.JSONObject;
 //imports
 
@@ -191,7 +187,7 @@ public class AtmFee {
             stmt.setString(2, pinNumber);
             stmt.setDouble(3, 0.0);
             stmt.setString(4, name);
-            stmt.setString(5, "EUR");//makes base currency EUR cause its one in the txt file
+            stmt.setString(5, "USD");//makes base currency EUR cause its one in the txt file
             stmt.executeUpdate();
 
             users.put(accountNumber, new User(pinNumber, 0.0, name, "EUR"));
@@ -822,7 +818,11 @@ private void clearEstaments(String accountNumber) {
         double annualInterestRate = inputScanner.nextDouble();
         inputScanner.nextLine();
         double total = loanAmount * (1 + (annualInterestRate * loanTerm));
+        total = Math.round(total*100)/100; // Round to two decimal places
         System.out.println("You will owe $" + total + " after " + loanTerm + " years.");
+        double monthlyPayment = total / (loanTerm * 12);
+        monthlyPayment = Math.round(monthlyPayment*100)/100;
+        System.out.println("Your monthly payment will be $" + monthlyPayment);
     }
 
 
