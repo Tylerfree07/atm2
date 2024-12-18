@@ -17,6 +17,7 @@ Main file is in the src(1) folder under the name atmfee.java.
 - **Transactions**
   - Deposit, withdraw, and transfer funds between accounts.
   - Maintain and display transaction history (up to 10 transactions per user).
+  - Download transactions as CSV or PDF file.
   - Save transaction history in a SQLite database.
 
 - **Currency Exchange**
@@ -29,6 +30,9 @@ Main file is in the src(1) folder under the name atmfee.java.
 - **Settings**
   - Update user details: PIN, name, and preferred currency.
 
+- **Loan Calculator**
+  -Calculate the intrest youll have to pay on loans and what a monthly payment would look like
+
 ---
 
 ## Technologies Used
@@ -36,6 +40,7 @@ Main file is in the src(1) folder under the name atmfee.java.
 - **Programming Language**: Java
 - **Database**: SQLite (for user and transaction data)
 - **File I/O**: Used for loading exchange rates.
+- **API**: used exchnage.api to update `rates.txt` every day 
 
 ---
 
@@ -43,10 +48,12 @@ Main file is in the src(1) folder under the name atmfee.java.
 
 1. Java JDK 8 or higher.
 2. SQLite library for Java (`sqlite-jdbc`).
-3. `rates.txt` file with exchange rates in the format:
+3. `rates.txt` file with exchange rates in the format
+4. JSON libary
+5. ITEXT pdf libary
 
 ## Documentation
-~ https://docs.google.com/document/d/1p1l0w5T9XqPrJfOV5suOWM3kb8eO2JPCzq1yn6yhVBQ/edit?usp=sharing 
+~ https://docs.google.com/document/d/1hhWKqE6zr4tPKKVbau2W22E8YheD095OtJhAjUPTY7k/edit?usp=sharing
 
 
 ~ I really enjoyed working on this project i hope you enjoy using it
