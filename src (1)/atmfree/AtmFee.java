@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Image;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
@@ -785,6 +786,23 @@ private void exportTransactionsToPDF() {
         PdfWriter.getInstance(document, new FileOutputStream(pdfFilePath));
         document.open();
 
+
+    String imagePath = "logo.png"; // Path to your image file
+            Image img = Image.getInstance(imagePath);
+
+            // Resize the image
+            img.scaleToFit(100, 50); // Adjust width and height as needed
+
+            // Set image position (top-right corner)
+            float x = document.getPageSize().getWidth() - img.getScaledWidth() - 10; // 10 units padding
+            float y = document.getPageSize().getHeight() - img.getScaledHeight() - 10; // 10 units padding
+            img.setAbsolutePosition(x, y);
+
+            // Add the image
+            document.add(img);
+
+
+
         document.add(new Paragraph("Transaction Report for Account: " + accountNumber));
         document.add(new Paragraph(" ")); // Empty line for spacing
 
@@ -800,7 +818,7 @@ private void exportTransactionsToPDF() {
         }
         document.add(table);
         System.out.println("Transactions exported to: " + pdfFilePath);
-    } catch (DocumentException | FileNotFoundException e) {
+    } catch (DocumentException | IOException e) {
         System.out.println("Error exporting transactions to PDF.");
         e.printStackTrace();
     } finally {
