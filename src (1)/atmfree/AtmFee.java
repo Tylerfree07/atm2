@@ -615,88 +615,103 @@ while (true) {
     }
 
 
-    private void transfer(){
-       loadExchangeRates();
-       User currentUser = users.get(accountNumber); // grbas currentuser account
-       String currentCurrency = currentUser.currency; // grabs current users currency setting
-       double currentRate = Double.parseDouble(rate.get(currentCurrency)); //grbas rate for the currenyc from rates.txt
-       // converts recipent currency to uppercase
-        System.out.print("Enter the recipient's account number: ");
-        String recipientAccount = inputScanner.nextLine();
-        // Add to recipient's balance
-         User recipientUser = users.get(recipientAccount);
-        String recipientCurrency = recipientUser.currency;
-        double recipentRate = Double.parseDouble(rate.get(recipientCurrency));
-        // Check if recipient exists
-        if (!users.containsKey(recipientAccount)) {
-            System.out.println("The recipient's account number does not exist.");
+   private void transfer() {
+    loadExchangeRates();
+
+    User currentUser = users.get(accountNumber); // Sender's account
+    String currentCurrency = currentUser.currency;
+    double currentRate = Double.parseDouble(rate.get(currentCurrency));
+
+    System.out.print("Enter the recipient's account number: ");
+    String recipientAccount = inputScanner.nextLine();
+
+    // Validate recipient
+    if (!users.containsKey(recipientAccount)) {
+        System.out.println("The recipient's account number does not exist.");
+        return;
+    }
+
+    User recipientUser = users.get(recipientAccount);
+    String recipientCurrency = recipientUser.currency;
+    double recipientRate = Double.parseDouble(rate.get(recipientCurrency));
+
+    System.out.print("Enter the amount to transfer: $");
+    if (inputScanner.hasNextDouble()) {
+        double transferAmount = inputScanner.nextDouble();
+        inputScanner.nextLine(); // Clear the buffer
+
+        double amountInSenderCurrency = transferAmount / currentRate;
+        amountInSenderCurrency = Math.round(amountInSenderCurrency * 100) / 100.0;
+
+        if (amountInSenderCurrency <= 0) {
+            System.out.println("Invalid amount. Transfer amount must be greater than $0.");
             return;
         }
-    
-        System.out.print("Enter the amount to transfer: $");
-        if (inputScanner.hasNextDouble()) {
-            double transferAmount = inputScanner.nextDouble();
-            inputScanner.nextLine(); // Clear the buffer
-            transferAmount = transferAmount/currentRate;
-            transferAmount = Math.round(transferAmount *100)/100;
-    
-            if (transferAmount <= 0) {
-                System.out.println("Invalid amount. Transfer amount must be greater than $0.");
-                return;
-            }
-    
-            if (transferAmount > balance) {
-                System.out.println("Insufficient funds. Transfer cannot be completed.");
-                return;
-            }
-    
-            // Deducting from sender's balance
-            balance -= transferAmount;
-            users.get(accountNumber).balance = balance;
-    
-            // Add to recipient's balance
-            
-             // checks user in database
-            recipientUser.balance += transferAmount; 
-    
-            // Save updated balances
-            saveToDatabase();
-    
-            // Record transactions for both accounts
-            transaction("Transfer to " + recipientAccount, (transferAmount * currentRate));
-            transaction("Transfer from " + accountNumber, (transferAmount * recipentRate)); // Record for recipient's transaction
-           
-            System.out.println("Successfully transferred $" + (transferAmount *currentRate)+ " to account " + recipientAccount);
-        } else {
-            System.out.println("invalid");
-            inputScanner.nextLine(); // Clear invalid input
-        }   
+
+        if (amountInSenderCurrency > balance) {
+            System.out.println("Insufficient funds. Transfer cannot be completed.");
+            return;
         }
+
+        // Deduct from sender
+        balance -= amountInSenderCurrency;
+        currentUser.balance = balance;
+
+        // Add to recipient
+        double amountInRecipientCurrency = transferAmount * recipientRate;
+        recipientUser.balance += amountInRecipientCurrency;
+
+        // Save updated balances
+        saveToDatabase();
+
+        // Record transactions
+        transaction(accountNumber, "Transfer to " + recipientAccount, transferAmount);
+        transaction(recipientAccount, "Transfer from " + accountNumber, transferAmount);
+
+        System.out.printf(
+            "Successfully transferred $%.2f to account %s.%n",
+            transferAmount, recipientAccount
+        );
+    } else {
+        System.out.println("Invalid input. Please enter a valid amount.");
+        inputScanner.nextLine(); // Clear invalid input
+    }
+}
+
         
 
         // Add this method to handle transactions
-        private void transaction(String type, double amount) {
-            List<Transaction> userTransactions = transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>());
+       private void transaction(String accountNumber, String type, double amount) {
+    if (accountNumber == null || type == null || amount <= 0) {
+        System.out.println("Invalid transaction details. Please check the input.");
+        return;
+    }
 
-           
+    // Fetch or initialize transaction history for the account
+    List<Transaction> userTransactions = transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>());
 
-            // Check if the transaction already exists
-            boolean exists = userTransactions.stream()
-                .anyMatch(t -> t.type.equals(type) && t.amount == amount && t.date.equals(new Date().toString()));
+    // Get the current date in a consistent format
+    String currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd").format(new Date());
 
-            if (!exists) {
-                userTransactions.add(new Transaction(type, amount, new Date().toString()));
-                System.out.println("Transaction added: " + type + " of amount $" + amount);
-                
-                // Keep only the last 10 transactions
-                if (userTransactions.size() > 10) {
-                    userTransactions = userTransactions.subList(userTransactions.size() - 10, userTransactions.size());
-                    transactions.put(accountNumber, userTransactions);
-                }
-            } else {
-                System.out.println("Transaction already exists: " + type + " of amount $" + amount);
-            }
+    // Check if the transaction already exists
+    boolean exists = userTransactions.stream()
+            .anyMatch(t -> t.type.equals(type) && t.amount == amount && t.date.equals(currentDate));
+
+    if (!exists) {
+        // Add the transaction
+        userTransactions.add(new Transaction(type, amount, currentDate));
+        System.out.println("Transaction added: " + type + " of amount $" + amount);
+
+        // Retain only the last 10 transactions
+        if (userTransactions.size() > 10) {
+            userTransactions = userTransactions.subList(userTransactions.size() - 10, userTransactions.size());
+            transactions.put(accountNumber, userTransactions); // Update map reference
         }
+    } else {
+        System.out.println("Transaction already exists: " + type + " of amount $" + amount);
+    }
+}
+
 
     public void clearTransactions() {
         transactions.clear(); // Clear the HashMap
