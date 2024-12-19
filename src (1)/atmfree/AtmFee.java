@@ -123,7 +123,7 @@ public class AtmFee {
     }
 
     public void loadUsersFromDatabase() {
-        try {
+         try{
             String query = "SELECT * FROM users";
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
@@ -620,10 +620,13 @@ while (true) {
        User currentUser = users.get(accountNumber); // grbas currentuser account
        String currentCurrency = currentUser.currency; // grabs current users currency setting
        double currentRate = Double.parseDouble(rate.get(currentCurrency)); //grbas rate for the currenyc from rates.txt
-        
+       // converts recipent currency to uppercase
         System.out.print("Enter the recipient's account number: ");
         String recipientAccount = inputScanner.nextLine();
-    
+        // Add to recipient's balance
+         User recipientUser = users.get(recipientAccount);
+        String recipientCurrency = recipientUser.currency;
+        double recipentRate = Double.parseDouble(rate.get(recipientCurrency));
         // Check if recipient exists
         if (!users.containsKey(recipientAccount)) {
             System.out.println("The recipient's account number does not exist.");
@@ -652,15 +655,16 @@ while (true) {
             users.get(accountNumber).balance = balance;
     
             // Add to recipient's balance
-            User recipientUser = users.get(recipientAccount); // checks user in database
-            recipientUser.balance += transferAmount;
+            
+             // checks user in database
+            recipientUser.balance += transferAmount; 
     
             // Save updated balances
             saveToDatabase();
     
             // Record transactions for both accounts
             transaction("Transfer to " + recipientAccount, (transferAmount * currentRate));
-            transaction("Transfer from " + accountNumber, (transferAmount * currentRate)); // Record for recipient's transaction
+            transaction("Transfer from " + accountNumber, (transferAmount * recipentRate)); // Record for recipient's transaction
            
             System.out.println("Successfully transferred $" + (transferAmount *currentRate)+ " to account " + recipientAccount);
         } else {
@@ -669,7 +673,7 @@ while (true) {
         }   
         }
         
-    
+
         // Add this method to handle transactions
         private void transaction(String type, double amount) {
             List<Transaction> userTransactions = transactions.computeIfAbsent(accountNumber, k -> new ArrayList<>());
@@ -779,7 +783,6 @@ private void exportTransactionsToPDF() {
             table.addCell(String.valueOf(t.amount));
             table.addCell(t.date);
         }
-
         document.add(table);
         System.out.println("Transactions exported to: " + pdfFilePath);
     } catch (DocumentException | FileNotFoundException e) {
@@ -807,7 +810,6 @@ private void clearEstaments(String accountNumber) {
     }
     
     private void calcLoan(){
-       
         System.out.print("Enter the loan amount: $");
         double loanAmount = inputScanner.nextDouble();
         inputScanner.nextLine(); // Clear the buffer
@@ -900,7 +902,6 @@ private Map<String, String> fetchExchangeRatesFromAPI() throws Exception {
     } else {
         throw new Exception("API returned non-OK response: " + responseCode);
     }
-
     return newRates;
 }
 private void exchange(){
@@ -910,13 +911,10 @@ private void exchange(){
         System.out.println("Welcome to currency exchange!");
         System.out.println("Please insert your current currency(Ex. USD): ");
         String current = inputScanner.nextLine().toUpperCase(); //gets current currency
-        
         System.out.println("Please insert the currency you want to exchange to(Ex. CAD): ");
         String exchange = inputScanner.nextLine().toUpperCase(); // gets exchnage currency
-        
         System.out.println("Enter Amount: $");
         Double amount = inputScanner.nextDouble();
-     
         
         // Retrieve the values from the HashMap
         String currentRateStr = rate.get(current); // Get the rate as a String
