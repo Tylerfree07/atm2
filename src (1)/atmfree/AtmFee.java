@@ -566,7 +566,8 @@ while (true) {
                     System.out.println("1. Change PinNumber");
                     System.out.println("2. Change Name");
                     System.out.println("3. Currency");
-                    System.out.println("4. Exit");
+                    System.out.println("4. Delete Account");
+                    System.out.println("5. Exit");
                     Integer settings = inputScanner.nextInt();
                     inputScanner.nextLine();
                     switch(settings){
@@ -592,7 +593,14 @@ while (true) {
                             saveToDatabase();
                             System.out.println("New currency save to file!");
                             break;
-                        case 4:
+                        case 4:{ System.out.println("Are you sure you want to delet your acount!(y/n)");
+                        String confirm = inputScanner.next();
+                        if(confirm.equalsIgnoreCase("y")){deleteUser(accountNumber);}
+                        
+                        
+                        
+                        }
+                            case 5:
                             return;
                             
                         default:
@@ -849,6 +857,35 @@ private void clearEstaments(String accountNumber) {
     }
     }
     
+
+private void deleteUser(String accountNumber) {
+   
+
+    try {
+        // Remove from database
+        String deleteUserQuery = "DELETE FROM users WHERE accountNumber = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(deleteUserQuery)) {
+            stmt.setString(1, accountNumber);
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                System.out.println("Failed to delete the user from the database.");
+                return;
+            }
+        }
+
+        // Remove from transactions database
+        clearEstaments(accountNumber);
+
+        // Remove from memory
+        users.remove(accountNumber);
+
+        System.out.println("User and all associated data have been successfully deleted.");
+    } catch (SQLException e) {
+        System.out.println("Error deleting the user.");
+        e.printStackTrace();
+    }
+    }
+
     private void calcLoan(){
         System.out.print("Enter the loan amount: $");
         double loanAmount = inputScanner.nextDouble();
