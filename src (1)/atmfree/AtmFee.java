@@ -300,7 +300,14 @@ while (true) {
                             loadTransactionsFromDatabase();
                             exportTransactionsToCSV();
                             clearTransactions();}
-                case 4 ->  clearEstaments(accountNumber);
+                case 4 ->  { System.out.println("Are you sure you want to clear transaction history? (y/n)");
+                            String answer = inputScanner.nextLine();
+                            if (answer.equalsIgnoreCase("y")) {
+                                    clearEstaments(accountNumber);
+                                    System.out.println("Transaction history cleared.");
+                                    }
+                            else if (answer.equalsIgnoreCase("n")) {return;}
+                            else { System.out.println("Invalid answer. Please try again.");}}
                 case 5 -> { return; }
                 default -> System.out.println("Invalid option. Try again.");
             }
