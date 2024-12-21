@@ -593,12 +593,10 @@ while (true) {
                             saveToDatabase();
                             System.out.println("New currency save to file!");
                             break;
-                        case 4:{ System.out.println("Are you sure you want to delet your acount!(y/n)");
+                        case 4:{ System.out.println("Are you sure you want to delete your acount!(y/n)");
                         String confirm = inputScanner.next();
                         if(confirm.equalsIgnoreCase("y")){deleteUser(accountNumber);}
-                        
-                        
-                        
+                         mainMenu();
                         }
                             case 5:
                             return;
@@ -878,8 +876,6 @@ private void deleteUser(String accountNumber) {
 
         // Remove from memory
         users.remove(accountNumber);
-
-        System.out.println("User and all associated data have been successfully deleted.");
     } catch (SQLException e) {
         System.out.println("Error deleting the user.");
         e.printStackTrace();
