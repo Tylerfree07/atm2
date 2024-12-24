@@ -35,20 +35,16 @@ public class AtmFee {
     private static Connection connTransactions;
     private Scanner inputScanner = new Scanner(System.in);
     private double balance = 0;
-
     private Map<String, User> users;
     private String accountNumber;
     private Map<String, List<Transaction>> transactions = new HashMap<>();
      HashMap<String, String> rate = new HashMap<>();
      String filePath = "rates.txt";
-
      private String API_KEY = "3d3ad73d8e9fda40a5af4915"; // Replace with your API Key
      private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/USD";
     public static void initializeDatabase() {
         try {
             conn = DriverManager.getConnection("jdbc:sqlite:atm_users.db");
-            
-            
             String createTableSQL = """
                 CREATE TABLE IF NOT EXISTS users (
                     accountNumber TEXT PRIMARY KEY,
@@ -60,8 +56,6 @@ public class AtmFee {
             """;
             Statement stmt = conn.createStatement();
             stmt.execute(createTableSQL);
-            
-            
         } catch (SQLException e) {
             System.out.println("Error initializing users database.");
             e.printStackTrace();
@@ -71,8 +65,6 @@ public class AtmFee {
     public static void initializeDatabaseTransactions() {
         try {
             connTransactions = DriverManager.getConnection("jdbc:sqlite:atm_transaction.db");
-          
-            
             String createTableSQL = """
                 CREATE TABLE IF NOT EXISTS transactions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -205,10 +197,12 @@ public class AtmFee {
 
     private void mainMenu() {
         while (true) {
-            System.out.println("\nWelcome to the ATM!:");
+            System.out.println("\n------------------------");
+            System.out.println("Welcome to the ATM!:");
             System.out.println("1. Log in");
             System.out.println("2. Create Account");
             System.out.println("3. Exit");
+            System.out.println("------------------------");
             System.out.print("Choose an option: ");
 
             int choice = inputScanner.nextInt();
@@ -218,7 +212,9 @@ public class AtmFee {
                 case 1 -> logIn();
                 case 2 -> createAccount();
                 case 3 -> {
+                    System.out.println("------------------------");
                     System.out.println("Thank you for using the ATM. Goodbye!");
+                    System.out.println("------------------------");
                     System.exit(0);
                 }
                 default -> System.out.println("Invalid option. Try again.");
@@ -229,9 +225,10 @@ public class AtmFee {
     private void logIn() {
        int Attempts = 3;
        for ( int i = 0; i <Attempts ; i++ ) {
+        System.out.println("------------------------");
         System.out.print("Enter your account number: ");
         String accountNum = inputScanner.nextLine();
-
+        System.out.println("------------------------");
         System.out.print("Enter your 4-digit PIN: ");
         String pinNum = inputScanner.nextLine();
 
@@ -244,8 +241,6 @@ public class AtmFee {
             System.out.println("Invalid account number or PIN. Please try again.");
             System.out.println("Attempts left: " + (Attempts - 1 - i));
         }
-        
-
     }
     System.out.println("you have run out of trys please try again later!!!!");
     try {
@@ -258,10 +253,12 @@ public class AtmFee {
     }
     private void useraction() {
         while (true) {
+            System.out.println("------------------------");
             System.out.println("1. Account");
             System.out.println("2. Tools");
             System.out.println("3. Settings");
             System.out.println("4. Exit");
+            System.out.println("------------------------");
             System.out.print("Choose an option: ");
             int choiceacion = inputScanner.nextInt();
             inputScanner.nextLine(); // Clear buffer
@@ -270,8 +267,9 @@ public class AtmFee {
                 case 1 -> userMenu();
                 case 2 -> tools();
                 case 3 -> settings();
-                case 4 -> {
-                    return; }
+                case 4 -> { System.out.println("------------------------");
+                            System.out.println("Logging out...");
+                            return; }
                 default -> System.out.println("Invalid option. Try again.");
             }
         }
@@ -279,12 +277,15 @@ public class AtmFee {
 
 private void estamentmenu() {
 while (true) {
+    System.out.println("------------------------");
     System.out.println("Estament Menu:");
     System.out.println("1. View transactions");
     System.out.println("2. Export to PDF file");
     System.out.println("3. Export to CSV file");
     System.out.println("4. Clear transaction history");
     System.out.println("5. Exit");
+    System.out.println("------------------------");
+    System.out.print("Choose an option: ");
     int choice = inputScanner.nextInt();
     inputScanner.nextLine(); // Clear buffer
     
@@ -300,7 +301,10 @@ while (true) {
                             loadTransactionsFromDatabase();
                             exportTransactionsToCSV();
                             clearTransactions();}
-                case 4 ->  { System.out.println("Are you sure you want to clear transaction history? (y/n)");
+                case 4 ->  {System.out.println("------------------------"); 
+                            System.out.println("Are you sure you want to clear transaction history? (y/n)");
+                            System.out.println("------------------------");
+                            System.out.print(":");
                             String answer = inputScanner.nextLine();
                             if (answer.equalsIgnoreCase("y")) {
                                     clearEstaments(accountNumber);
@@ -319,10 +323,10 @@ while (true) {
 
     private void userMenu() {
         String name = users.get(accountNumber).name;
-
+        System.out.println("------------------------");
         System.out.println("\nWelcome back " + name );
         while (true) {
-
+            System.out.println("------------------------");
             System.out.println("User Menu:");
             System.out.println("1. View Balance");
             System.out.println("2. Deposit");
@@ -330,6 +334,7 @@ while (true) {
             System.out.println("4. Transfer");
             System.out.println("5. Estament's");
             System.out.println("6. Exit");
+            System.out.println("------------------------");
             System.out.print("Choose an option: ");
 
             int choice = inputScanner.nextInt();
@@ -343,6 +348,7 @@ while (true) {
                     double currentRate = Double.parseDouble(rate.get(currentCurrency));
                     double convertedBalance = balance *currentRate;
                     convertedBalance = Math.round(convertedBalance * 100)/100;
+                    System.out.println("------------------------");
                     System.out.println("Your balance is: $" + convertedBalance +" in " + currentCurrency);
             }
                 case 2 -> {
@@ -360,8 +366,6 @@ while (true) {
                 case 5 ->estamentmenu();
                 case 6-> {
                     saveToDatabase();
-                   
-                    System.out.println("Logging out...");
                     return;
                 }
                 default -> System.out.println("Invalid option. Try again.");
@@ -370,6 +374,7 @@ while (true) {
     }
 
     private void deposit() {
+        System.out.println("------------------------");
         System.out.print("Enter deposit amount: $");
         double amount = inputScanner.nextDouble();
         inputScanner.nextLine(); // Clear buffer
@@ -382,6 +387,7 @@ while (true) {
             users.get(accountNumber).balance = balance;
             double convertedBalance = balance * currentRate;
             convertedBalance = Math.round(convertedBalance * 100.0) / 100.0;
+           System.out.println("------------------------");
             System.out.println("Deposit successful. Your new balance is $" + convertedBalance + " in " + currentCurrency);
             
             // Get or create transaction list and add new transaction
@@ -394,11 +400,13 @@ while (true) {
                 transactions.put(accountNumber, userTransactions);
             }
         } else {
+            System.out.println("------------------------");
             System.out.println("Invalid amount. Deposit failed.");
         }
     }
     
     private void withdraw() {
+        System.out.println("------------------------");
         System.out.print("Enter withdrawal amount: $");
         double amount = inputScanner.nextDouble();
         inputScanner.nextLine(); // Clear buffer
@@ -411,6 +419,7 @@ while (true) {
             users.get(accountNumber).balance = balance;
             double convertedBalance = balance * currentRate;
             convertedBalance = Math.round(convertedBalance*100)/100;
+            System.out.println("------------------------");
             System.out.println("Withdrawal successful. Your new balance is $" + convertedBalance+ " in " + currentCurrency);
             
             // Get or create transaction list and add new transaction
@@ -423,8 +432,10 @@ while (true) {
                 transactions.put(accountNumber, userTransactions);
             }
         } else if (amount > balance) {
+            System.out.println("------------------------");
             System.out.println("Insufficient funds. Withdrawal failed.");
         } else {
+            System.out.println("------------------------");
             System.out.println("Invalid amount. Withdrawal failed.");
         }
     }
@@ -473,8 +484,6 @@ while (true) {
                     }
                 }
             }
-           
-
             // Clear the transactions map after successful save
             transactions.clear(); // Clear the HashMap after saving
         } catch (SQLException e) {
@@ -506,12 +515,13 @@ while (true) {
     private void taxEstimator() {// tax esitmator tool
         double[] incomeLimits = {51446, 55867, 90559, 102894, 106732, 111733, 150000, 173205, 220000, 246752};
         double[] taxRates = {0.2005, 0.2415, 0.2965, 0.3148, 0.3389, 0.3791, 0.4341, 0.4497, 0.4829, 0.4985, 0.5353};
-    
+        System.out.println("------------------------");
         System.out.print("What is your yearly income: $");
         double income = inputScanner.nextDouble();
+        System.out.println("------------------------");
         System.out.print("What did you put into RRSP or FHSA: $");
         double taxFreeAmount = inputScanner.nextDouble();
-    
+        System.out.println("------------------------");
         income -= taxFreeAmount; // Adjust income
         double taxTotal = 0;
         double previousLimit = 0;
@@ -535,10 +545,12 @@ while (true) {
 
     private void tools() {
         while (true) {
+            System.out.println("------------------------");
             System.out.println("1. Tax Estimator");
             System.out.println("2. Exchange Rate");
             System.out.println("3. Loan Calculator");
             System.out.println("4. Exit");
+            System.out.println("------------------------");
             System.out.print("Choose an option: ");
             
             int tools = inputScanner.nextInt();
@@ -560,40 +572,51 @@ while (true) {
     }
 
     private void settings(){
-           
         while(true){
+                    System.out.println("------------------------");
                     System.out.println("Welcome to settings");
                     System.out.println("1. Change PinNumber");
                     System.out.println("2. Change Name");
-                    System.out.println("3. Currency");
+                    System.out.println("3. Change Currency");
                     System.out.println("4. Delete Account");
                     System.out.println("5. Exit");
+                    System.out.println("------------------------");
+                    System.out.print("Choose an option: ");
                     Integer settings = inputScanner.nextInt();
                     inputScanner.nextLine();
                     switch(settings){
                         
                         case 1:
-                            System.out.println("Enter new pin number:");
+                            System.out.println("------------------------");
+                            System.out.print("Enter new pin number:");
                             String Newpin = inputScanner.nextLine();
                             users.get(accountNumber).pinNumber= Newpin;
                             saveToDatabase();
+                            System.out.println("------------------------");
                             System.out.println("New pin saved to file!");
                             break;
                         case 2:
-                            System.out.println("Enter new name:");
+                        System.out.println("------------------------");    
+                        System.out.print("Enter new name:");
                             String NewName = inputScanner.nextLine();
                             users.get(accountNumber).name = NewName;
                             saveToDatabase();
+                            System.out.println("------------------------");
                             System.out.println("New name saved to file!");
                             break;
                         case 3:
-                            System.out.println("Enter new Currency");
+                        System.out.println("------------------------");    
+                        System.out.print("Enter new Currency:");
                             String newCurrency = inputScanner.nextLine().toUpperCase();
                             users.get(accountNumber).currency = newCurrency;
                             saveToDatabase();
+                            System.out.println("------------------------");
                             System.out.println("New currency save to file!");
                             break;
-                        case 4:{ System.out.println("Are you sure you want to delete your acount!(y/n)");
+                        case 4:{ System.out.println("------------------------");
+                            System.out.println("Are you sure you want to delete your acount!(y/n)");
+                        System.out.println("------------------------");
+                        System.out.print("Choice:");
                         String confirm = inputScanner.next();
                         if(confirm.equalsIgnoreCase("y")){deleteUser(accountNumber);}
                          mainMenu();
@@ -635,7 +658,7 @@ while (true) {
     User currentUser = users.get(accountNumber); // Sender's account
     String currentCurrency = currentUser.currency;
     double currentRate = Double.parseDouble(rate.get(currentCurrency));
-
+    System.out.println("------------------------");
     System.out.print("Enter the recipient's account number: ");
     String recipientAccount = inputScanner.nextLine();
 
@@ -648,7 +671,7 @@ while (true) {
     User recipientUser = users.get(recipientAccount);
     String recipientCurrency = recipientUser.currency;
     double recipientRate = Double.parseDouble(rate.get(recipientCurrency));
-
+    System.out.println("------------------------");
     System.out.print("Enter the amount to transfer: $");
     if (inputScanner.hasNextDouble()) {
         double transferAmount = inputScanner.nextDouble();
@@ -658,11 +681,13 @@ while (true) {
         amountInSenderCurrency = Math.round(amountInSenderCurrency * 100) / 100.0;
 
         if (amountInSenderCurrency <= 0) {
+            System.out.println("------------------------");
             System.out.println("Invalid amount. Transfer amount must be greater than $0.");
             return;
         }
 
         if (amountInSenderCurrency > balance) {
+            System.out.println("------------------------");
             System.out.println("Insufficient funds. Transfer cannot be completed.");
             return;
         }
@@ -681,7 +706,7 @@ while (true) {
         // Record transactions
         transaction(accountNumber, "Transfer to " + recipientAccount, transferAmount);
         transaction(recipientAccount, "Transfer from " + accountNumber, transferAmount);
-
+        System.out.println("------------------------");
         System.out.printf(
             "Successfully transferred $%.2f to account %s.%n",
             transferAmount, recipientAccount
@@ -691,9 +716,6 @@ while (true) {
         inputScanner.nextLine(); // Clear invalid input
     }
 }
-
-        
-
         // Add this method to handle transactions
        private void transaction(String accountNumber, String type, double amount) {
     if (accountNumber == null || type == null || amount <= 0) {
@@ -714,7 +736,7 @@ while (true) {
     if (!exists) {
         // Add the transaction
         userTransactions.add(new Transaction(type, amount, currentDate));
-        System.out.println("Transaction added: " + type + " of amount $" + amount);
+        
 
         // Retain only the last 10 transactions
         if (userTransactions.size() > 10) {
@@ -726,10 +748,8 @@ while (true) {
     }
 }
 
-
     public void clearTransactions() {
         transactions.clear(); // Clear the HashMap
-        
     }
 
     public static void main(String[] args) {
@@ -740,7 +760,6 @@ while (true) {
         atm.updateRatesFileOnceADay();
         atm.mainMenu(); // opens main menu
         closeDatabase(); //close datbase
-        
     }
 
     public static void closeDatabase() { // closes database (copied from internet no ides how this works)
@@ -756,15 +775,13 @@ while (true) {
         } catch (SQLException e) {
             System.out.println("Error closing the database.");
             e.printStackTrace();
-
         }
-        
-        
     }
 private void exportTransactionsToCSV() {
     try {
         List<Transaction> userTransactions = transactions.get(accountNumber);
         if (userTransactions == null || userTransactions.isEmpty()) {
+            System.out.println("------------------------");
             System.out.println("No transactions to export.");
             return;
         }
@@ -778,7 +795,7 @@ private void exportTransactionsToCSV() {
                 writer.newLine();
             }
         }
-
+        System.out.println("------------------------");
         System.out.println("Transactions exported to: " + csvFilePath);
     } catch (IOException e) {
         System.out.println("Error exporting transactions to CSV.");
@@ -788,33 +805,25 @@ private void exportTransactionsToCSV() {
 private void exportTransactionsToPDF() {
     List<Transaction> userTransactions = transactions.get(accountNumber);
     if (userTransactions == null || userTransactions.isEmpty()) {
+       System.out.println("------------------------");
         System.out.println("No transactions to export.");
         return;
     }
-
     String pdfFilePath = "transactions_" + accountNumber + ".pdf";
     Document document = new Document();
-
     try {
         PdfWriter.getInstance(document, new FileOutputStream(pdfFilePath));
         document.open();
-
-
-    String imagePath = "logo.png"; // Path to your image file
+            String imagePath = "logo.png"; // Path to your image file
             Image img = Image.getInstance(imagePath);
-
             // Resize the image
             img.scaleToFit(100, 50); // Adjust width and height as needed
-
             // Set image position (top-right corner)
             float x = document.getPageSize().getWidth() - img.getScaledWidth() - 10; // 10 units padding
             float y = document.getPageSize().getHeight() - img.getScaledHeight() - 10; // 10 units padding
             img.setAbsolutePosition(x, y);
-
             // Add the image
             document.add(img);
-
-
 
         document.add(new Paragraph("Transaction Report for Account: " + accountNumber));
         document.add(new Paragraph(" ")); // Empty line for spacing
@@ -830,6 +839,7 @@ private void exportTransactionsToPDF() {
             table.addCell(t.date);
         }
         document.add(table);
+        System.out.println("------------------------");
         System.out.println("Transactions exported to: " + pdfFilePath);
     } catch (DocumentException | IOException e) {
         System.out.println("Error exporting transactions to PDF.");
@@ -839,13 +849,10 @@ private void exportTransactionsToPDF() {
     }
 }
 private void clearEstaments(String accountNumber) {
-   
     String deleteTransactionsQuery = "DELETE FROM transactions WHERE accountNumber = ?";
-
     try (PreparedStatement deleteStmt = connTransactions.prepareStatement(deleteTransactionsQuery)) {
         // Set the account number in the query
         deleteStmt.setString(1, accountNumber);
-
         // Execute the deletion
         int rowsDeleted = deleteStmt.executeUpdate();
         System.out.println(rowsDeleted + " transaction(s) deleted for account: " + accountNumber);
@@ -854,11 +861,8 @@ private void clearEstaments(String accountNumber) {
         e.printStackTrace();
     }
     }
-    
 
 private void deleteUser(String accountNumber) {
-   
-
     try {
         // Remove from database
         String deleteUserQuery = "DELETE FROM users WHERE accountNumber = ?";
@@ -870,10 +874,8 @@ private void deleteUser(String accountNumber) {
                 return;
             }
         }
-
         // Remove from transactions database
         clearEstaments(accountNumber);
-
         // Remove from memory
         users.remove(accountNumber);
     } catch (SQLException e) {
@@ -883,36 +885,37 @@ private void deleteUser(String accountNumber) {
     }
 
     private void calcLoan(){
+        System.out.println("------------------------");
         System.out.print("Enter the loan amount: $");
         double loanAmount = inputScanner.nextDouble();
         inputScanner.nextLine(); // Clear the buffer
+        System.out.println("------------------------");
         System.out.print("Enter the amount you pay the loan back in years: ");
         int loanTerm = inputScanner.nextInt();
         inputScanner.nextLine(); // Clear the buffer
+        System.out.println("------------------------");
         System.out.print("Enter the annual interest rate (in decimal form)Ex. 0.07: ");
         double annualInterestRate = inputScanner.nextDouble();
         inputScanner.nextLine();
         double total = loanAmount * (1 + (annualInterestRate * loanTerm));
         total = Math.round(total*100)/100; // Round to two decimal places
+        System.out.println("------------------------");
         System.out.println("You will owe $" + total + " after " + loanTerm + " years.");
         double monthlyPayment = total / (loanTerm * 12);
         monthlyPayment = Math.round(monthlyPayment*100)/100;
+        System.out.println("------------------------");
         System.out.println("Your monthly payment will be $" + monthlyPayment);
     }
-
-
 
 private void updateRatesFileOnceADay() {
     try {
         // Check if today's date matches the last update date in the file
         if (isFileUpToDate()) {
-            System.out.println("Rates file is already up to date for today.");
+            
             return; // Exit if rates are already updated today
         }
-
         // Fetch new rates from API
         Map<String, String> updatedRates = fetchExchangeRatesFromAPI();
-
         // Write new rates and today's date to rates.txt
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             writer.write("LAST_UPDATE:" + LocalDate.now()); // Write today's date first
@@ -963,11 +966,9 @@ private Map<String, String> fetchExchangeRatesFromAPI() throws Exception {
             response.append(line);
         }
         reader.close();
-
         // Parse JSON response
         JSONObject jsonResponse = new JSONObject(response.toString());
         JSONObject ratesJSON = jsonResponse.getJSONObject("conversion_rates");
-
         // Store rates in the Map
         for (String currency : ratesJSON.keySet()) {
             newRates.put(currency, String.valueOf(ratesJSON.getDouble(currency)));
@@ -981,11 +982,14 @@ private void exchange(){
     // Ensure the file exists in your project directory
 
         loadExchangeRates();
+        System.out.println("------------------------");
         System.out.println("Welcome to currency exchange!");
         System.out.println("Please insert your current currency(Ex. USD): ");
         String current = inputScanner.nextLine().toUpperCase(); //gets current currency
+        System.out.println("------------------------");
         System.out.println("Please insert the currency you want to exchange to(Ex. CAD): ");
         String exchange = inputScanner.nextLine().toUpperCase(); // gets exchnage currency
+        System.out.println("------------------------");
         System.out.println("Enter Amount: $");
         Double amount = inputScanner.nextDouble();
         
@@ -1000,12 +1004,7 @@ private void exchange(){
         Total = Total*100;
         Total = Math.round(Total); // convert value into an value like a price
         Total = Total/100;
-
+        System.out.println("------------------------");
         System.out.println("Your exchanged amount from " + current +" to " + exchange + " is: $" + Total); //prints out values
     }
-
-
-
 }
-
-
