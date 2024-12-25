@@ -44,7 +44,7 @@ public class AtmFee {
      private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/USD";
     public static void initializeDatabase() {
         try {
-            conn = DriverManager.getConnection("jdbc:sqlite:atm_users.db");
+            conn = DriverManager.getConnection("jdbc:sqlite:atmfree.db");
             String createTableSQL = """
                 CREATE TABLE IF NOT EXISTS users (
                     accountNumber TEXT PRIMARY KEY,
@@ -52,6 +52,7 @@ public class AtmFee {
                     balance REAL NOT NULL,
                     name TEXT NOT NULL,
                     currency TEXT NOT NULL
+                    email TEXT NOT NULL
                 )
             """;
             Statement stmt = conn.createStatement();
@@ -95,11 +96,13 @@ public class AtmFee {
         double balance;
         String name;
         String currency;
-        User(String pinNumber, double balance, String name, String currency) {
+        String email;
+        User(String pinNumber, double balance, String name, String currency, String email) {
             this.pinNumber = pinNumber;
             this.balance = balance;
             this.name = name;
             this.currency = currency;
+            this.email = email;
         }
     }
 
@@ -127,7 +130,8 @@ public class AtmFee {
                 double balance = rs.getDouble("balance");
                 String name = rs.getString("name");
                 String currency = rs.getString("currency");
-                users.put(accountNumber, new User(pinNumber, balance, name, currency));
+                String email = rs.getString("email");
+                users.put(accountNumber, new User(pinNumber, balance, name, currency, email));
             }
             
         } catch (SQLException e) {
@@ -138,8 +142,8 @@ public class AtmFee {
 
     public void saveToDatabase() {
         String sql = """
-            INSERT OR REPLACE INTO users (accountNumber, password, balance, name, currency)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO users (accountNumber, password, balance, name, currency, email)
+            VALUES (?, ?, ?, ?, ?, ?)
         """;
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             for (Map.Entry<String, User> entry : users.entrySet()) {
@@ -150,6 +154,7 @@ public class AtmFee {
                 stmt.setDouble(3, user.balance);
                 stmt.setString(4, user.name);
                 stmt.setString(5, user.currency);
+                stmt.setString(6,user.email);
                 stmt.executeUpdate();
             }
             
@@ -170,20 +175,24 @@ public class AtmFee {
         System.out.print("Enter your name (e.g., John_Doe): ");// gets name
         String name = inputScanner.nextLine();
 
+        System.out.print("Enter your email: ");// gets email
+        String email = inputScanner.nextLine();
+
         try {
             String insertSQL = """
-                INSERT INTO users (accountNumber, password, balance, name, currency)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO users (accountNumber, password, balance, name, currency, email)
+                VALUES (?, ?, ?, ?, ?, ?)
             """;
             PreparedStatement stmt = conn.prepareStatement(insertSQL);
             stmt.setString(1, accountNumber);
             stmt.setString(2, pinNumber);
             stmt.setDouble(3, 0.0);
             stmt.setString(4, name);
-            stmt.setString(5, "USD");//makes base currency EUR cause its one in the txt file
+            stmt.setString(5, "USD");
+            stmt.setString(6, email);//makes base currency EUR cause its one in the txt file
             stmt.executeUpdate();
 
-            users.put(accountNumber, new User(pinNumber, 0.0, name, "EUR"));
+            users.put(accountNumber, new User(pinNumber, 0.0, name, "USD", email));
             System.out.println("Account created successfully.");
         } catch (SQLException e) {
             System.out.println("Error creating new account.");
@@ -955,13 +964,11 @@ private Map<String, String> fetchExchangeRatesFromAPI() throws Exception {
     URL url = new URL(BASE_URL);
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("GET");
-
     int responseCode = conn.getResponseCode();
     if (responseCode == HttpURLConnection.HTTP_OK) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
         StringBuilder response = new StringBuilder();
         String line;
-
         while ((line = reader.readLine()) != null) {
             response.append(line);
         }
@@ -1007,4 +1014,5 @@ private void exchange(){
         System.out.println("------------------------");
         System.out.println("Your exchanged amount from " + current +" to " + exchange + " is: $" + Total); //prints out values
     }
+
 }
