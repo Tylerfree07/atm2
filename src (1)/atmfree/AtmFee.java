@@ -587,8 +587,9 @@ while (true) {
                     System.out.println("1. Change PinNumber");
                     System.out.println("2. Change Name");
                     System.out.println("3. Change Currency");
-                    System.out.println("4. Delete Account");
-                    System.out.println("5. Exit");
+                    System.out.println("4. Change Email Address");
+                    System.out.println("5. Delete Account");
+                    System.out.println("6. Exit");
                     System.out.println("------------------------");
                     System.out.print("Choose an option: ");
                     Integer settings = inputScanner.nextInt();
@@ -622,15 +623,24 @@ while (true) {
                             System.out.println("------------------------");
                             System.out.println("New currency save to file!");
                             break;
-                        case 4:{ System.out.println("------------------------");
-                            System.out.println("Are you sure you want to delete your acount!(y/n)");
-                        System.out.println("------------------------");
-                        System.out.print("Choice:");
-                        String confirm = inputScanner.next();
-                        if(confirm.equalsIgnoreCase("y")){deleteUser(accountNumber);}
-                         mainMenu();
+                        case 4: {
+                            System.out.println("------------------------");
+                            System.out.print("Enter new email address:");
+                            String newEmail = inputScanner.nextLine();
+                            users.get(accountNumber).email = newEmail;
+                            saveToDatabase();
+                            System.out.println("------------------------");
+                            System.out.println("New email saved to file!");
                         }
-                            case 5:
+                            case 5:{ System.out.println("------------------------");
+                            System.out.println("Are you sure you want to delete your acount!(y/n)");
+                            System.out.println("------------------------");
+                            System.out.print("Choice:");
+                            String confirm = inputScanner.next();
+                            if(confirm.equalsIgnoreCase("y")){deleteUser(accountNumber);}
+                            mainMenu();
+                        }
+                            case 6:
                             return;
                             
                         default:
