@@ -28,7 +28,7 @@ Main file is in the src(1) folder under the name atmfee.java.
   - Tax estimator based on income and tax-free contributions.
 
 - **Settings**
-  - Update user details: PIN, name, and preferred currency.
+  - Update user details: PIN, name,preferred currency, and email.
 
 - **Loan Calculator**
   -Calculate the intrest youll have to pay on loans and what a monthly payment would look like
