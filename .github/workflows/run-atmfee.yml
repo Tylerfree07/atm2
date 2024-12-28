@@ -2,21 +2,35 @@ name: ATM Application CI/CD
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-        - name: Run application with secrets
-          env:
-            ATM_API_KEY: ${{ secrets.ATM_API_KEY }}
-            ATM_FROM_EMAIL: ${{ secrets.ATM_FROM_EMAIL }}
-            ATM_EMAIL_PASSWORD: ${{ secrets.ATM_EMAIL_PASSWORD }}
-          run: |
-            echo "Using ATM_API_KEY: $ATM_API_KEY"
-            echo "Using ATM_FROM_EMAIL: $ATM_FROM_EMAIL"
-            java -cp "build:lib/*" atmfree.AtmFeeApplication
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Download dependencies
+      run: |
+        mkdir -p lib
+        wget -O lib/sqlite-jdbc-3.44.1.0.jar https://github.com/xerial/sqlite-jdbc/releases/download/3.44.1.0/sqlite-jdbc-3.44.1.0.jar
+
+    - name: Compile Java code
+      run: |
+        mkdir -p build
+        javac -cp "lib/*" -d build src/atmfree/AtmFee.java
+
+    - name: Run application
+      env:
+        ATM_API_KEY: ${{ secrets.ATM_API_KEY }}
+        ATM_FROM_EMAIL: ${{ secrets.ATM_FROM_EMAIL }}
+        ATM_EMAIL_PASSWORD: ${{ secrets.ATM_EMAIL_PASSWORD }}
+      run: |
+        java -cp "build:lib/*" atmfree.AtmFee
