@@ -1,0 +1,29 @@
+name: Inject Secrets and Run AtmFee
+
+on:
+  push:
+    branches:
+      - main  # Runs the workflow when changes are pushed to the main branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'  # Replace with your Java version if different
+
+    - name: Compile and Run AtmFee
+      env:
+        ATM_API_KEY: ${{ secrets.ATM_API_KEY }}
+        ATM_FROM_EMAIL: ${{ secrets.ATM_FROM_EMAIL }}
+        ATM_EMAIL_PASSWORD: ${{ secrets.ATM_EMAIL_PASSWORD }}
+      run: |
+        javac AtmFee.java
+        java atmfree.AtmFee

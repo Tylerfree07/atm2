@@ -3,7 +3,6 @@ import java.util.Scanner;
 import java.util.HashMap;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -43,10 +42,11 @@ public class AtmFee {
     private Map<String, List<Transaction>> transactions = new HashMap<>();
      HashMap<String, String> rate = new HashMap<>();
      String filePath = "rates.txt";
-     private String API_KEY = "3d3ad73d8e9fda40a5af4915"; // Replace with your API Key
-     private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/USD";
-     private final String fromEmail = "dashergaming07@gmail.com"; // Replace with your email
-    private final String emailPassword = "gpda jybd hxmo sozd";
+     private String API_KEY = System.getenv("ATM_API_KEY");
+    private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/USD";
+     private final String fromEmail = System.getenv("ATM_FROM_EMAIL");
+    private final String emailPassword = System.getenv("ATM_EMAIL_PASSWORD");
+
     public static void initializeDatabase() {
         try {
             conn = DriverManager.getConnection("jdbc:sqlite:atmfree.db");
@@ -778,7 +778,6 @@ while (true) {
         initializeDatabase();
         initializeDatabaseTransactions(); // intalize bith databases
         AtmFee atm = new AtmFee();
-        atm.sendEmail("tyler.free.2007@gmail.com","test","test");
         atm.loadUsersFromDatabase(); // load values from datbase into a hashmap
         atm.updateRatesFileOnceADay();
         atm.mainMenu(); // opens main menu
