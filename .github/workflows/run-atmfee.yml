@@ -27,10 +27,21 @@ jobs:
         mkdir -p build
         javac -cp "lib/*" -d build src/atmfree/AtmFee.java
 
+    - name: Initialize database files
+      run: |
+        touch atmfree.db
+        touch atm_transaction.db
+
+    - name: Debug Runtime Environment
+      run: |
+        ls -R lib
+        ls -R build
+        ls atmfree.db atm_transaction.db || echo "Databases not found"
+
     - name: Run application
       env:
         ATM_API_KEY: ${{ secrets.ATM_API_KEY }}
         ATM_FROM_EMAIL: ${{ secrets.ATM_FROM_EMAIL }}
         ATM_EMAIL_PASSWORD: ${{ secrets.ATM_EMAIL_PASSWORD }}
       run: |
-        java -cp "build:lib/*" atmfree.AtmFee
+        java -cp "build:lib/sqlite-jdbc-3.44.1.0.jar:lib/*" atmfree.AtmFee
