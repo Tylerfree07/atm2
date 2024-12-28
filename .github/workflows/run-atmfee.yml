@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
     - name: Set up JDK
       uses: actions/setup-java@v3
@@ -22,7 +23,6 @@ jobs:
     - name: Create lib directory and download dependencies
       run: |
         mkdir -p lib
-        # Download required JAR files
         wget -O lib/sqlite-jdbc-3.44.1.0.jar https://github.com/xerial/sqlite-jdbc/releases/download/3.44.1.0/sqlite-jdbc-3.44.1.0.jar
         wget -O lib/itextpdf-5.5.13.3.jar https://repo1.maven.org/maven2/com/itextpdf/itextpdf/5.5.13.3/itextpdf-5.5.13.3.jar
         wget -O lib/json-20231013.jar https://repo1.maven.org/maven2/org/json/json/20231013/json-20231013.jar
@@ -41,13 +41,18 @@ jobs:
         echo "EUR:0.92" >> rates.txt
         echo "GBP:0.79" >> rates.txt
 
+    - name: Debug Directory Structure
+      run: |
+        ls -R
+        cat rates.txt || echo "rates.txt missing"
+
     - name: Run application
       env:
         ATM_API_KEY: ${{ secrets.ATM_API_KEY }}
         ATM_FROM_EMAIL: ${{ secrets.ATM_FROM_EMAIL }}
         ATM_EMAIL_PASSWORD: ${{ secrets.ATM_EMAIL_PASSWORD }}
       run: |
-        java -cp "build:lib/*:lib/sqlite-jdbc-3.44.1.0.jar" atmfree.AtmFee
+        java -cp "build:lib/*" atmfree.AtmFee
 
     - name: Package application
       run: |
