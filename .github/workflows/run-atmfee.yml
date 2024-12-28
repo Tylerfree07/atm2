@@ -11,58 +11,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
-
-    - name: Set up JDK
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-
-    - name: Create lib directory and download dependencies
-      run: |
-        mkdir -p lib
-        wget -O lib/sqlite-jdbc-3.44.1.0.jar https://github.com/xerial/sqlite-jdbc/releases/download/3.44.1.0/sqlite-jdbc-3.44.1.0.jar
-        wget -O lib/itextpdf-5.5.13.3.jar https://repo1.maven.org/maven2/com/itextpdf/itextpdf/5.5.13.3/itextpdf-5.5.13.3.jar
-        wget -O lib/json-20231013.jar https://repo1.maven.org/maven2/org/json/json/20231013/json-20231013.jar
-        wget -O lib/javax.mail-1.6.2.jar https://repo1.maven.org/maven2/com/sun/mail/javax.mail/1.6.2/javax.mail-1.6.2.jar
-        wget -O lib/activation-1.1.1.jar https://repo1.maven.org/maven2/javax/activation/activation/1.1.1/activation-1.1.1.jar
-
-    - name: Compile Java code
-      run: |
-        mkdir -p build
-        javac -cp "lib/*" -d build src/atmfree/AtmFee.java
-
-    - name: Initialize resources
-      run: |
-        echo "LAST_UPDATE:2024-01-01" > rates.txt
-        echo "USD:1.0" >> rates.txt
-        echo "EUR:0.92" >> rates.txt
-        echo "GBP:0.79" >> rates.txt
-
-    - name: Debug Directory Structure
-      run: |
-        ls -R
-        cat rates.txt || echo "rates.txt missing"
-
-    - name: Run application
-      env:
-        ATM_API_KEY: ${{ secrets.ATM_API_KEY }}
-        ATM_FROM_EMAIL: ${{ secrets.ATM_FROM_EMAIL }}
-        ATM_EMAIL_PASSWORD: ${{ secrets.ATM_EMAIL_PASSWORD }}
-      run: |
-        java -cp "build:lib/*" atmfree.AtmFee
-
-    - name: Package application
-      run: |
-        jar cvf AtmFee.jar -C build .
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: atm-application
-        path: |
-          AtmFee.jar
-          lib/
-          rates.txt
+        - name: Run application with secrets
+          env:
+            ATM_API_KEY: ${{ secrets.ATM_API_KEY }}
+            ATM_FROM_EMAIL: ${{ secrets.ATM_FROM_EMAIL }}
+            ATM_EMAIL_PASSWORD: ${{ secrets.ATM_EMAIL_PASSWORD }}
+          run: |
+            echo "Using ATM_API_KEY: $ATM_API_KEY"
+            echo "Using ATM_FROM_EMAIL: $ATM_FROM_EMAIL"
+            java -cp "build:lib/*" atmfree.AtmFeeApplication
