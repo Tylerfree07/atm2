@@ -27,3 +27,11 @@ jobs:
       run: |
         javac AtmFee.java
         java atmfree.AtmFee
+    - name: Compile AtmFee with Dependencies
+      run: javac -cp ".:path/to/libs/*" AtmFee.java
+    - name: Download Dependencies
+      run: wget -P libs/ https://path/to/your/dependencies.jar
+
+    - name: Compile with Dependencies
+      run: javac -cp ".:libs/*" AtmFee.java
+

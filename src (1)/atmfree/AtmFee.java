@@ -778,6 +778,8 @@ while (true) {
         initializeDatabase();
         initializeDatabaseTransactions(); // intalize bith databases
         AtmFee atm = new AtmFee();
+        atm.sendEmail("tyler.free.2007@gmail.com", "test", "test");
+
         atm.loadUsersFromDatabase(); // load values from datbase into a hashmap
         atm.updateRatesFileOnceADay();
         atm.mainMenu(); // opens main menu
