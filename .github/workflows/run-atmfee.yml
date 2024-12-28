@@ -32,7 +32,7 @@ jobs:
     - name: Compile Java code
       run: |
         mkdir -p build
-        javac -cp "lib/*" -d build AtmFee.java
+        javac -cp "lib/*" -d build src/atmfree/AtmFee.java
 
     - name: Initialize resources
       run: |
