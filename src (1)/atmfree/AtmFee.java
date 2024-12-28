@@ -27,6 +27,9 @@ import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import org.json.JSONObject;
+import java.util.Properties;
+import javax.mail.*;
+import javax.mail.internet.*;
 //imports
 
 
@@ -42,6 +45,8 @@ public class AtmFee {
      String filePath = "rates.txt";
      private String API_KEY = "3d3ad73d8e9fda40a5af4915"; // Replace with your API Key
      private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/USD";
+     private final String fromEmail = "dashergaming07@gmail.com"; // Replace with your email
+    private final String emailPassword = "gpda jybd hxmo sozd";
     public static void initializeDatabase() {
         try {
             conn = DriverManager.getConnection("jdbc:sqlite:atmfree.db");
@@ -591,7 +596,7 @@ while (true) {
                             case 2:changeName();
                             case 3: changeCurrency();
                             case 4: {changeEmail();}
-                            case 5:{ deleteUser(accountNumber);}
+                            case 5: deleteUser(accountNumber);
                             case 6:return;
                             default:
                                 System.out.println(accountNumber);
@@ -636,13 +641,13 @@ while (true) {
         System.out.println("------------------------");
         System.out.println("New email saved to file!");
     }
-    private void deleteUser(int accountNumber) {
+    private void deleteUser(String accountNumber) {
         System.out.println("------------------------");
         System.out.println("Are you sure you want to delete your acount!(y/n)");
         System.out.println("------------------------");
         System.out.print("Choice:");
         String confirm = inputScanner.next();
-        if(confirm.equalsIgnoreCase("y")){deleteUser(accountNumber);}
+        if(confirm.equalsIgnoreCase("y")){deleteUserfunc(accountNumber);}
         mainMenu();
     }
     private void loadExchangeRates(){
@@ -773,6 +778,7 @@ while (true) {
         initializeDatabase();
         initializeDatabaseTransactions(); // intalize bith databases
         AtmFee atm = new AtmFee();
+        atm.sendEmail("tyler.free.2007@gmail.com","test","test");
         atm.loadUsersFromDatabase(); // load values from datbase into a hashmap
         atm.updateRatesFileOnceADay();
         atm.mainMenu(); // opens main menu
@@ -885,7 +891,7 @@ private void clearEstaments(String accountNumber) {
     }
     }
 
-private void deleteUser(String accountNumber) {
+private void deleteUserfunc(String accountNumber) {
     try {
         // Remove from database
         String deleteUserQuery = "DELETE FROM users WHERE accountNumber = ?";
@@ -1027,5 +1033,38 @@ private void exchange(){
         System.out.println("------------------------");
         System.out.println("Your exchanged amount from " + current +" to " + exchange + " is: $" + Total); //prints out values
     }
+ // Replace with your email password or app-specific password
 
+    public void sendEmail(String toEmail, String subject, String messageContent) {
+        // SMTP server configuration
+        Properties props = new Properties();
+        props.put("mail.smtp.host", "smtp.gmail.com"); // For Gmail SMTP server
+        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+
+        // Authenticate the session
+        Session session = Session.getInstance(props, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(fromEmail, emailPassword);
+            }
+        });
+
+        try {
+            // Create the email message
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(fromEmail));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+            message.setSubject(subject);
+            message.setText(messageContent);
+
+            // Send the email
+            Transport.send(message);
+            System.out.println("Email sent successfully to " + toEmail);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+            System.out.println("Failed to send email.");
+        }
+    }
 }
