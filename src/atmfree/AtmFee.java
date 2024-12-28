@@ -42,10 +42,10 @@ public class AtmFee {
     private Map<String, List<Transaction>> transactions = new HashMap<>();
      HashMap<String, String> rate = new HashMap<>();
      String filePath = "rates.txt";
-     private String API_KEY = System.getenv("ATM_API_KEY");
+     private String API_KEY = "3d3ad73d8e9fda40a5af4915";
     private String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/USD";
-     private final String fromEmail = System.getenv("ATM_FROM_EMAIL");
-    private final String emailPassword = System.getenv("ATM_EMAIL_PASSWORD");
+     private final String fromEmail =  "dashergaming07@gmail.com";
+    private final String emailPassword = "gpda jybd hxmo sozd";
 
     public static void initializeDatabase() {
         try {
@@ -778,8 +778,6 @@ while (true) {
         initializeDatabase();
         initializeDatabaseTransactions(); // intalize bith databases
         AtmFee atm = new AtmFee();
-        atm.sendEmail("tyler.free.2007", "t", "t");
-
         atm.loadUsersFromDatabase(); // load values from datbase into a hashmap
         atm.updateRatesFileOnceADay();
         atm.mainMenu(); // opens main menu
