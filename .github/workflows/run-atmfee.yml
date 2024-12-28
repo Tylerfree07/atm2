@@ -47,7 +47,7 @@ jobs:
         ATM_FROM_EMAIL: ${{ secrets.ATM_FROM_EMAIL }}
         ATM_EMAIL_PASSWORD: ${{ secrets.ATM_EMAIL_PASSWORD }}
       run: |
-        java -cp "build:lib/*" atmfree.AtmFee
+        java -cp "build:lib/*:lib/sqlite-jdbc-3.44.1.0.jar" atmfree.AtmFee
 
     - name: Package application
       run: |
