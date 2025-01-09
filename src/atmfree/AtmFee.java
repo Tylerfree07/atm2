@@ -593,10 +593,15 @@ while (true) {
                     inputScanner.nextLine();
                     switch(settings){
                             case 1:changepinNumber();
+                                    return;
                             case 2:changeName();
+                                    return;
                             case 3: changeCurrency();
-                            case 4: {changeEmail();}
+                                    return;
+                            case 4: {changeEmail();
+                                    return;}
                             case 5: deleteUser(accountNumber);
+                                    return;
                             case 6:return;
                             default:
                                 System.out.println(accountNumber);
